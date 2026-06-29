@@ -1,0 +1,33 @@
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  background: #0a1530; color: #eaf2ff; max-width: 800px; margin: 0 auto; padding: 24px;
+}
+h1 { font-size: 22px; color: #38e1ff; }
+h2 { font-size: 16px; margin: 0 0 12px; }
+.box { background: rgba(14, 28, 64, 0.6); border: 1px solid rgba(56, 225, 255, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 18px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+input, select, button { font-size: 15px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(56, 225, 255, 0.3); background: #081026; color: #eaf2ff; }
+button { background: linear-gradient(90deg, #38e1ff, #2a6cff); color: #06122e; font-weight: 700; border: none; cursor: pointer; }
+.msg { color: #ffd266; margin-top: 10px; min-height: 18px; }
+.total { color: #ffd266; margin-left: 10px; }
+#search { width: 100%; margin-bottom: 12px; }
+.list { list-style: none; padding: 0; }
+.list li { display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid rgba(138, 160, 200, 0.15); }
+.list .company { color: #8aa0c8; font-size: 13px; flex: 1; }
+.list .trigger { padding: 6px 10px; font-size: 13px; }
+label { display: flex; align-items: center; gap: 6px; }
+
+/* Login gate (Supabase mode only) */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 12, 22, 0.92); backdrop-filter: blur(4px);
+}
+.login-card {
+  display: flex; flex-direction: column; gap: 12px;
+  width: min(340px, 90vw); padding: 28px;
+  background: #131a2b; border: 1px solid rgba(138, 160, 200, 0.2); border-radius: 12px;
+}
+.login-card h2 { margin: 0 0 4px; }
+.login-card input { padding: 10px 12px; font-size: 15px; }
+.login-card button { padding: 10px; font-size: 15px; }

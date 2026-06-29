@@ -1,0 +1,7 @@
+# Cloudflare Pages rewrites — map friendly paths to the Vite MPA outputs.
+# (Copied to dist/ at build time because assets/ is Vite's publicDir.)
+/checkin   /apps/checkin/index.html   200
+/screen    /apps/screen/index.html    200
+/admin     /apps/admin/index.html     200
+/preview   /apps/preview/index.html   200
+/          /apps/checkin/index.html   200

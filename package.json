@@ -1,0 +1,38 @@
+{
+  "name": "mfeia-49-lobby",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MFEIA 49th Anniversary - AI Interactive Digital Lobby (big-screen check-in)",
+  "type": "module",
+  "scripts": {
+    "dev:server": "tsx watch server/index.ts",
+    "dev:web": "vite",
+    "dev": "concurrently -n server,web -c green,cyan \"npm:dev:server\" \"npm:dev:web\"",
+    "build": "vite build",
+    "build:supabase": "cross-env VITE_BACKEND=supabase vite build",
+    "start": "cross-env NODE_ENV=production tsx server/index.ts",
+    "import": "tsx server/import.ts",
+    "import:supabase": "tsx scripts/import-supabase.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "csv-parse": "^5.6.0",
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4",
+    "three": "^0.171.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/three": "^0.171.0",
+    "@types/ws": "^8.5.13",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

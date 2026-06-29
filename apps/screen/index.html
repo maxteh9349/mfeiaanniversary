@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MFEIA 49 周年 · 虚拟社交大厅</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <div id="hud">
+      <!-- outer glowing frame + corner brackets -->
+      <div class="screen-frame">
+        <i class="corner tl"></i><i class="corner tr"></i>
+        <i class="corner bl"></i><i class="corner br"></i>
+      </div>
+
+      <header class="hud-top">
+        <div class="hud-brand">
+          <img class="logo-cog" id="brand-logo" alt="MFEIA" />
+        </div>
+
+        <div class="hud-title-wrap">
+          <div class="welcome-zh">欢 迎 莅 临</div>
+          <div class="tech-box title-box">
+            <div class="tech-inner">
+              <h1>马六甲机器厂商公会 <b>49 周年纪念</b></h1>
+            </div>
+          </div>
+          <div class="slogan">携手创新 · 共塑未来</div>
+        </div>
+
+        <div class="hud-corner">
+          <div class="hud-ai">人工智能 · 创新 · 未来</div>
+          <div class="tech-box smart-badge">
+            <div class="tech-inner">智能签到系统</div>
+          </div>
+        </div>
+      </header>
+
+      <aside class="hud-left tech-box">
+        <div class="tech-inner panel-inner">
+          <div class="panel-title">最新签到嘉宾</div>
+          <ul id="recent-list" class="recent"></ul>
+        </div>
+      </aside>
+
+      <aside class="hud-right">
+        <div class="tech-box counter-card">
+          <div class="tech-inner">
+            <div class="counter-label">签到总人数</div>
+            <div id="counter" class="counter-num">0</div>
+            <div class="counter-unit">位嘉宾</div>
+          </div>
+        </div>
+        <div class="tech-box sponsor-card">
+          <div class="tech-inner">
+            <div class="sponsor-label">鸣谢</div>
+            <div class="sponsor-logo" id="sponsor-logo">
+              <svg viewBox="0 0 40 40" class="hex-mark" aria-hidden="true">
+                <polygon points="20,3 33,20 20,20" fill="#3fb6e6" />
+                <polygon points="20,20 33,20 20,37" fill="#7ac943" />
+                <polygon points="20,3 20,20 7,20" fill="#2e6fb0" />
+                <polygon points="7,20 20,20 20,37" fill="#f2c200" />
+              </svg>
+              <span class="hex-text">HEXAGON</span>
+            </div>
+            <div class="sponsor-sub">赞助商</div>
+          </div>
+        </div>
+      </aside>
+
+      <footer class="hud-bottom">
+        <div class="tech-box flow">
+          <div class="tech-inner flow-inner">
+            <span class="flow-title">签到流程</span>
+            <img id="qr" class="qr" alt="签到二维码" />
+            <span class="flow-step"><b>①</b> 扫描二维码<br />进行签到</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-step">
+              <svg class="step-icon" viewBox="0 0 48 48">
+                <g fill="none" stroke="#7fc6ff" stroke-width="3" stroke-linecap="round">
+                  <path d="M6 16V8h8M42 16V8h-8M6 32v8h8M42 32v8h-8" />
+                </g>
+                <g fill="#7fc6ff">
+                  <circle cx="24" cy="21" r="6.5" />
+                  <path d="M15 37c1.5-7 16.5-7 18 0z" />
+                </g>
+              </svg>
+              <b>②</b> 签到成功<br />欢迎加入
+            </span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-step">
+              <svg class="step-icon" viewBox="0 0 48 48"><g fill="#9fd6ff">
+                <circle cx="17" cy="17" r="6" /><circle cx="31" cy="17" r="6" />
+                <path d="M7 38c0-7 6-11 10-11s10 4 10 11zM27 38c0-7 4-11 8-11s8 4 8 11z" /></g></svg>
+              <b>③</b> 您的虚拟形象<br />进入会场
+            </span>
+          </div>
+        </div>
+
+      </footer>
+
+      <div class="bottom-right">
+        <div class="tech-box clock">
+          <div class="tech-inner">
+            <div id="clock-time" class="clock-time">--:--</div>
+            <div id="clock-date" class="clock-date"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="motto">团 结 · 专 业 · 创 新 · 共 赢</div>
+
+      <!-- hero reveal: full-screen welcome poster shown on check-in -->
+      <div id="hero-reveal">
+        <div class="hero-frame">
+          <img class="hero-poster" alt="欢迎" />
+          <div class="hero-name-overlay">
+            <span class="hero-name"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

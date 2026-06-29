@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MFEIA 运维台</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <h1>MFEIA 49 周年 · 运维台</h1>
+
+    <section class="box">
+      <h2>手动代签 / 新增嘉宾</h2>
+      <div class="row">
+        <input id="m-name" placeholder="姓名 *" />
+        <input id="m-company" placeholder="公司 / 单位" />
+        <select id="m-gender">
+          <option value="unknown">称谓</option>
+          <option value="male">先生</option>
+          <option value="female">女士</option>
+        </select>
+        <button id="m-submit">签到</button>
+      </div>
+      <div id="m-msg" class="msg"></div>
+    </section>
+
+    <section class="box">
+      <h2>大屏标语</h2>
+      <div class="row">
+        <input id="t-slogan" placeholder="大屏标语文字" style="flex:1; min-width:260px" />
+        <button id="t-slogan-apply">应用</button>
+      </div>
+      <div id="t-msg" class="msg"></div>
+    </section>
+
+    <section class="box">
+      <h2>赞助商 Logo</h2>
+      <div class="row">
+        <input type="file" id="s-file" accept="image/*" />
+        <label>切换间隔(秒) <input type="number" id="s-interval" value="6" min="1" step="1" style="width:64px" /></label>
+        <button id="s-interval-apply">应用秒数</button>
+      </div>
+      <ul id="s-list" class="list"></ul>
+      <div id="s-msg" class="msg"></div>
+    </section>
+
+    <section class="box">
+      <h2>已签到（点击可重新触发形象）<span id="total" class="total">0</span></h2>
+      <input id="search" placeholder="搜索姓名 / 公司…" />
+      <ul id="list" class="list"></ul>
+    </section>
+
+    <script type="module" src="./admin.ts"></script>
+  </body>
+</html>
