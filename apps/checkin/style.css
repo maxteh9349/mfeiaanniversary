@@ -55,15 +55,6 @@ body {
 .r-company { font-size: 13px; color: var(--muted); }
 .empty { color: var(--muted); font-size: 14px; padding: 10px 4px; }
 
-.photo-field { display: block; margin-top: 10px; }
-.photo-preview {
-  display: grid; place-items: center; width: 120px; height: 120px; margin: 0 auto;
-  border-radius: 50%; border: 2px dashed rgba(56, 225, 255, 0.5); color: var(--muted);
-  font-size: 14px; text-align: center; background: rgba(8, 16, 38, 0.6);
-  background-size: cover; background-position: center; cursor: pointer;
-}
-.photo-preview.has { border-style: solid; border-color: var(--cyan); box-shadow: 0 0 12px rgba(56, 225, 255, 0.4); }
-
 .gender { display: flex; flex-wrap: wrap; gap: 10px; }
 .g-btn {
   flex: 1 1 28%; padding: 12px; font-size: 15px; color: var(--text);
