@@ -5,7 +5,9 @@
 -- ---- helpers --------------------------------------------------------------
 -- epoch milliseconds now()
 create or replace function public.now_ms() returns bigint
-  language sql stable as $$ select (extract(epoch from now()) * 1000)::bigint $$;
+  language sql stable
+  set search_path = ''
+  as $$ select (extract(epoch from now()) * 1000)::bigint $$;
 
 -- ---- tables ---------------------------------------------------------------
 create table if not exists public.guests (
@@ -116,8 +118,9 @@ begin
   -- which is the single event the screen turns into a spawn.
   v_ts := public.now_ms();
   update public.guests
+    -- qualify the RHS column: the function's OUT columns shadow bare `photo_url`.
     set status = 'checked_in', checked_in_at = v_ts, avatar_id = v_avatar,
-        photo_url = coalesce(p_photo_url, photo_url)
+        photo_url = coalesce(p_photo_url, guests.photo_url)
     where guests.id = v_id;
   insert into public.checkins(guest_id, created_at) values (v_id, v_ts);
 
