@@ -115,7 +115,12 @@ const auth: AuthApi = {
 
 const backend: Backend = {
   async searchGuests(q) {
-    const like = `%${q.trim()}%`;
+    // Strip characters PostgREST treats as structure in an .or() filter string
+    // (comma separates conditions; parens group; % is our own wildcard) so a
+    // guest name typed into the search box can't break or extend the query.
+    const term = q.trim().replace(/[%,()*\\]/g, "");
+    if (!term) return [];
+    const like = `%${term}%`;
     const { data } = await supabase
       .from("guests")
       .select("*")
