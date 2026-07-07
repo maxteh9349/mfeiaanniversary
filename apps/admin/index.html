@@ -50,6 +50,40 @@
       <ul id="list" class="list"></ul>
     </section>
 
+    <section class="box draw-box">
+      <h2>抽奖 · 奖品管理</h2>
+      <div class="row">
+        <input id="p-name" placeholder="奖品名称 *" />
+        <select id="p-level">
+          <option value="grand">特等奖</option>
+          <option value="second">二等奖</option>
+          <option value="third">三等奖</option>
+          <option value="lucky" selected>幸运奖</option>
+        </select>
+        <input id="p-sponsor" placeholder="赞助商（选填）" />
+        <label>数量 <input type="number" id="p-qty" value="1" min="1" step="1" style="width:64px" /></label>
+        <input type="file" id="p-file" accept="image/*" />
+        <button id="p-add">添加奖品</button>
+      </div>
+      <ul id="p-list" class="list"></ul>
+      <div id="p-msg" class="msg"></div>
+    </section>
+
+    <section class="box draw-box">
+      <h2>抽奖控制台</h2>
+      <div class="row">
+        <select id="d-prize" style="flex:1; min-width:220px"></select>
+        <button id="d-start" class="draw-go">开始 START</button>
+        <button id="d-stop" class="draw-stop">停止揭晓 STOP</button>
+        <button id="d-redraw">重抽 REDRAW</button>
+        <button id="d-reset" class="ghost">清屏</button>
+        <button id="d-fullscreen" class="ghost">全屏展示 ↗</button>
+      </div>
+      <div id="d-msg" class="msg"></div>
+      <h2 style="margin: 18px 0 12px">中奖记录</h2>
+      <ul id="w-list" class="list"></ul>
+    </section>
+
     <script type="module" src="./admin.ts"></script>
   </body>
 </html>

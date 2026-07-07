@@ -31,3 +31,11 @@ label { display: flex; align-items: center; gap: 6px; }
 .login-card h2 { margin: 0 0 4px; }
 .login-card input { padding: 10px 12px; font-size: 15px; }
 .login-card button { padding: 10px; font-size: 15px; }
+
+/* Lucky draw operator panel */
+.draw-box { border-color: rgba(255, 210, 102, 0.35); }
+.draw-go { background: linear-gradient(90deg, #ffd266, #ff9f43); color: #2a1600; }
+.draw-stop { background: linear-gradient(90deg, #ff6b6b, #d63447); color: #fff; }
+button.ghost { background: transparent; color: #9fd6ff; border: 1px solid rgba(56, 225, 255, 0.4); }
+.list .w-claim { background: linear-gradient(90deg, #38e1ff, #2a6cff); }
+.list .w-forfeit { background: transparent; color: #ff9f9f; border: 1px solid rgba(255, 120, 120, 0.5); }

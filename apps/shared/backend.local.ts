@@ -75,6 +75,11 @@ const auth: AuthApi = {
   },
 };
 
+/** The draw module is Supabase-only; local-mode draw calls fail loudly. */
+function drawUnavailable(): never {
+  throw new Error("lucky draw requires the Supabase backend");
+}
+
 const backend: Backend = {
   async searchGuests(q) {
     const res = await fetch(`/api/guests/search?q=${encodeURIComponent(q)}`);
@@ -137,6 +142,23 @@ const backend: Backend = {
   async triggerSpawn(id) {
     await fetch(`/api/admin/trigger/${id}`, { method: "POST" });
   },
+
+  // ---- lucky draw: Supabase-only. Local build stubs these (runtime is supabase). ----
+  listPrizes: drawUnavailable,
+  createPrize: drawUnavailable,
+  updatePrize: drawUnavailable,
+  deletePrize: drawUnavailable,
+  drawPoolSample: drawUnavailable,
+  pickWinner: drawUnavailable,
+  redraw: drawUnavailable,
+  setWinnerStatus: drawUnavailable,
+  logDraw: drawUnavailable,
+  listWinners: drawUnavailable,
+  broadcastDraw: drawUnavailable,
+  subscribeDraw() {
+    /* no-op so a locally-served /draw page still mounts */
+  },
+
   auth,
 };
 

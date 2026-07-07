@@ -79,6 +79,52 @@ export type ClientMessage = HelloMessage;
 
 export const WS_PATH = "/ws";
 
+// ---- lucky draw -----------------------------------------------------------
+
+export type PrizeLevel = "lucky" | "third" | "second" | "grand";
+export type WinnerStatus = "pending" | "claimed" | "forfeit";
+
+export interface Prize {
+  id: number;
+  name: string;
+  level: PrizeLevel;
+  imageUrl: string | null;
+  sponsor: string | null;
+  quantity: number;
+  remaining: number;
+  sort: number;
+  status: "active" | "archived";
+}
+
+export interface Winner {
+  id: number;
+  prizeId: number;
+  guestId: number;
+  guestName: string;
+  status: WinnerStatus;
+  createdAt: number; // epoch ms
+}
+
+/** Broadcast payloads on the "draw" channel (operator -> presentation). */
+export interface DrawRollStart {
+  type: "roll_start";
+  prize: Prize;
+  reel: string[]; // guest names to scroll (cosmetic; winner is decided server-side)
+  countdownMs?: number;
+}
+export interface DrawReveal {
+  type: "reveal";
+  prize: Prize;
+  winner: Winner;
+}
+export interface DrawReset {
+  type: "reset";
+}
+export type DrawEvent = DrawRollStart | DrawReveal | DrawReset;
+
+/** Supabase Realtime broadcast channel name for the draw presentation. */
+export const DRAW_CHANNEL = "draw";
+
 /** Honorifics shown AFTER the name (Chinese convention); all others go before. */
 const POSTFIX_TITLES = new Set(["先生", "女士", "博士"]);
 

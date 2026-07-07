@@ -3,5 +3,6 @@
 /checkin   /apps/checkin/index.html   200
 /screen    /apps/screen/index.html    200
 /admin     /apps/admin/index.html     200
+/draw      /apps/draw/index.html      200
 /preview   /apps/preview/index.html   200
 /          /apps/checkin/index.html   200

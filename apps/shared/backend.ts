@@ -7,7 +7,7 @@
 // implementation is code-split (dynamic import) so the local build never pulls
 // in supabase-js, and the supabase build never needs the local server running.
 
-import type { Guest, SponsorLogo } from "../../shared/events.ts";
+import type { DrawEvent, Guest, Prize, SponsorLogo, Winner, WinnerStatus } from "../../shared/events.ts";
 
 /** Body accepted by checkin() — same shape the local /api/checkin took. */
 export interface CheckinBody {
@@ -28,6 +28,27 @@ export interface ScreenHandlers {
   onConfig(cfg: { lite?: boolean; paused?: boolean; maxAvatars?: number; spawnIntervalSec?: number }): void;
   onSponsors(logos: SponsorLogo[], intervalSec: number): void;
   onTexts(slogan: string): void;
+}
+
+/** Draft prize fields for create/update (id/remaining are server-managed). */
+export interface PrizeInput {
+  name: string;
+  level: Prize["level"];
+  sponsor?: string | null;
+  quantity: number;
+  sort?: number;
+  status?: Prize["status"];
+  /** New image as a data: URL; the impl uploads it and stores the URL. */
+  imageDataUrl?: string | null;
+}
+
+/** Presentation-side draw callbacks (mirror the "draw" broadcast events). */
+export interface DrawHandlers {
+  onRollStart(prize: Prize, reel: string[], countdownMs?: number): void;
+  onReveal(prize: Prize, winner: Winner): void;
+  onReset(): void;
+  /** postgres_changes re-sync so a freshly-opened /draw reflects current prizes. */
+  onPrizes?(prizes: Prize[]): void;
 }
 
 export interface AuthSession {
@@ -61,6 +82,24 @@ export interface Backend {
   setSponsorInterval(sec: number): Promise<void>;
   // admin: replay an existing guest onto the screen
   triggerSpawn(id: number): Promise<void>;
+
+  // ---- lucky draw ----
+  // prizes (operator CRUD)
+  listPrizes(): Promise<Prize[]>;
+  createPrize(input: PrizeInput): Promise<Prize>;
+  updatePrize(id: number, input: PrizeInput): Promise<void>;
+  deletePrize(id: number): Promise<void>;
+  // draw operations (server-side, authenticated)
+  drawPoolSample(limit?: number): Promise<string[]>;
+  pickWinner(prizeId: number): Promise<Winner>;
+  redraw(winnerId: number): Promise<Winner>;
+  setWinnerStatus(winnerId: number, status: WinnerStatus): Promise<void>;
+  logDraw(action: "draw_started" | "draw_stopped", prizeId?: number): Promise<void>;
+  listWinners(prizeId?: number): Promise<Winner[]>;
+  // realtime: presentation subscribes, operator broadcasts animation cues
+  subscribeDraw(handlers: DrawHandlers): void;
+  broadcastDraw(evt: DrawEvent): Promise<void>;
+
   // admin auth
   auth: AuthApi;
 }

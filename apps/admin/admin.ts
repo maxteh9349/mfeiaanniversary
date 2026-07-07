@@ -1,5 +1,18 @@
-import type { Guest } from "../../shared/events.ts";
+import type { Guest, Prize, PrizeLevel, WinnerStatus } from "../../shared/events.ts";
+import { DRAW_DEFAULTS } from "../../shared/config.ts";
 import { getBackend } from "../shared/backend.ts";
+
+const PRIZE_LEVELS: Record<PrizeLevel, string> = {
+  grand: "特等奖",
+  second: "二等奖",
+  third: "三等奖",
+  lucky: "幸运奖",
+};
+const WINNER_STATUS: Record<WinnerStatus, string> = {
+  pending: "待领取",
+  claimed: "已领取",
+  forfeit: "已弃权",
+};
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -171,10 +184,166 @@ void (async () => {
     });
   }
 
+  // ---- lucky draw ---------------------------------------------------------
+  const dMsg = $("d-msg");
+  const pMsg = $("p-msg");
+  const pList = $<HTMLUListElement>("p-list");
+  const wList = $<HTMLUListElement>("w-list");
+  let prizes: Prize[] = [];
+  let drawPrizeId: number | null = null; // prize the current roll is for
+  let currentWinnerId: number | null = null; // last committed winner (for redraw)
+
+  async function loadPrizes(): Promise<void> {
+    prizes = await backend.listPrizes();
+    pList.innerHTML = prizes
+      .map(
+        (p) => `<li data-id="${p.id}">
+        <span>${esc(p.name)}</span>
+        <span class="company">${PRIZE_LEVELS[p.level] ?? p.level} · 剩 ${p.remaining}/${p.quantity}${p.sponsor ? " · " + esc(p.sponsor) : ""}</span>
+        <button class="p-del trigger">删除</button>
+      </li>`,
+      )
+      .join("");
+    const sel = $<HTMLSelectElement>("d-prize");
+    const keep = sel.value;
+    sel.innerHTML = prizes
+      .filter((p) => p.status === "active")
+      .map((p) => `<option value="${p.id}">${esc(p.name)}（${PRIZE_LEVELS[p.level] ?? p.level}，剩 ${p.remaining}）</option>`)
+      .join("");
+    if (keep) sel.value = keep;
+  }
+
+  async function loadWinners(): Promise<void> {
+    const winners = await backend.listWinners();
+    wList.innerHTML = winners
+      .map(
+        (w) => `<li data-id="${w.id}">
+        <span>${esc(w.guestName)}</span>
+        <span class="company">${WINNER_STATUS[w.status] ?? w.status}</span>
+        ${w.status === "pending" ? `<button class="w-claim trigger">已领取</button><button class="w-forfeit trigger">弃权</button>` : ""}
+      </li>`,
+      )
+      .join("");
+  }
+
+  const prizeById = (id: number): Prize | undefined => prizes.find((p) => p.id === id);
+
+  $("p-add").addEventListener("click", async () => {
+    const name = ($("p-name") as HTMLInputElement).value.trim();
+    if (!name) return void (pMsg.textContent = "请输入奖品名称");
+    const quantity = Number(($("p-qty") as HTMLInputElement).value);
+    if (!Number.isFinite(quantity) || quantity < 1) return void (pMsg.textContent = "数量无效");
+    const level = ($("p-level") as HTMLSelectElement).value as PrizeLevel;
+    const sponsor = ($("p-sponsor") as HTMLInputElement).value.trim();
+    const file = ($("p-file") as HTMLInputElement).files?.[0];
+    pMsg.textContent = "保存中…";
+    try {
+      const imageDataUrl = file ? await fileToDataUrl(file) : null;
+      await backend.createPrize({ name, level, sponsor, quantity, imageDataUrl });
+      pMsg.textContent = "已添加";
+      ($("p-name") as HTMLInputElement).value = "";
+      ($("p-sponsor") as HTMLInputElement).value = "";
+      ($("p-qty") as HTMLInputElement).value = "1";
+      ($("p-file") as HTMLInputElement).value = "";
+      await loadPrizes();
+    } catch (err) {
+      pMsg.textContent = `保存失败：${(err as Error).message}`;
+    }
+  });
+
+  pList.addEventListener("click", async (e) => {
+    const li = (e.target as HTMLElement).closest("li") as HTMLElement | null;
+    if (li && (e.target as HTMLElement).classList.contains("p-del")) {
+      try {
+        await backend.deletePrize(Number(li.dataset.id));
+        await loadPrizes();
+      } catch {
+        pMsg.textContent = "删除失败（该奖品已有中奖记录，请改为归档）";
+      }
+    }
+  });
+
+  $("d-start").addEventListener("click", async () => {
+    const prizeId = Number(($("d-prize") as HTMLSelectElement).value);
+    const prize = prizeById(prizeId);
+    if (!prize) return void (dMsg.textContent = "请先选择奖品");
+    if (prize.remaining <= 0) return void (dMsg.textContent = "该奖品已抽完");
+    try {
+      const reel = await backend.drawPoolSample(DRAW_DEFAULTS.reelSize);
+      if (!reel.length) return void (dMsg.textContent = "抽奖池为空（无可抽嘉宾）");
+      drawPrizeId = prizeId;
+      currentWinnerId = null;
+      await backend.logDraw("draw_started", prizeId);
+      await backend.broadcastDraw({ type: "roll_start", prize, reel, countdownMs: DRAW_DEFAULTS.countdownSec * 1000 });
+      dMsg.textContent = "滚动中… 点击「停止揭晓」抽出中奖者";
+    } catch (err) {
+      dMsg.textContent = `开始失败：${(err as Error).message}`;
+    }
+  });
+
+  $("d-stop").addEventListener("click", async () => {
+    if (!drawPrizeId) return void (dMsg.textContent = "尚未开始抽奖");
+    const prize = prizeById(drawPrizeId);
+    try {
+      const winner = await backend.pickWinner(drawPrizeId);
+      currentWinnerId = winner.id;
+      await backend.logDraw("draw_stopped", drawPrizeId);
+      if (prize) await backend.broadcastDraw({ type: "reveal", prize, winner });
+      dMsg.textContent = `🎉 中奖：${winner.guestName}`;
+      await loadPrizes();
+      await loadWinners();
+    } catch (err) {
+      dMsg.textContent = `抽奖失败：${(err as Error).message}`;
+    }
+  });
+
+  $("d-redraw").addEventListener("click", async () => {
+    if (!currentWinnerId) return void (dMsg.textContent = "没有可重抽的当前中奖者");
+    try {
+      const winner = await backend.redraw(currentWinnerId);
+      currentWinnerId = winner.id;
+      const prize = prizeById(winner.prizeId);
+      if (prize) await backend.broadcastDraw({ type: "reveal", prize, winner });
+      dMsg.textContent = `🎉 重抽中奖：${winner.guestName}`;
+      await loadPrizes();
+      await loadWinners();
+    } catch (err) {
+      dMsg.textContent = `重抽失败：${(err as Error).message}`;
+    }
+  });
+
+  $("d-reset").addEventListener("click", async () => {
+    await backend.broadcastDraw({ type: "reset" });
+    drawPrizeId = null;
+    currentWinnerId = null;
+    dMsg.textContent = "已清屏";
+  });
+
+  $("d-fullscreen").addEventListener("click", () => window.open("/draw", "_blank"));
+
+  wList.addEventListener("click", async (e) => {
+    const li = (e.target as HTMLElement).closest("li") as HTMLElement | null;
+    if (!li) return;
+    const id = Number(li.dataset.id);
+    const t = e.target as HTMLElement;
+    try {
+      if (t.classList.contains("w-claim")) await backend.setWinnerStatus(id, "claimed");
+      else if (t.classList.contains("w-forfeit")) {
+        await backend.setWinnerStatus(id, "forfeit");
+        await loadPrizes();
+      } else return;
+      await loadWinners();
+    } catch (err) {
+      dMsg.textContent = `操作失败：${(err as Error).message}`;
+    }
+  });
+
   void refreshStats();
   setInterval(refreshStats, 5000);
   void loadSponsors();
   void loadSlogan();
+  void loadPrizes();
+  void loadWinners();
 })();
 
 /** Read + downscale an image file to a data URL (logos kept ≤512px). */

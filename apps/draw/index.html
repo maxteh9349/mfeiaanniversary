@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MFEIA 49 周年 · 幸运抽奖</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <div id="stage">
+      <header class="draw-header">
+        <div class="draw-title">马六甲机器厂商公会 <b>49 周年纪念晚宴</b></div>
+        <div class="draw-sub">幸 运 抽 奖</div>
+      </header>
+
+      <div class="prize-card" id="prize-card">
+        <div class="prize-level" id="prize-level"></div>
+        <img class="prize-img" id="prize-img" alt="" />
+        <div class="prize-name" id="prize-name">幸运抽奖</div>
+        <div class="prize-sponsor" id="prize-sponsor"></div>
+      </div>
+
+      <div class="reel-wrap">
+        <div class="reel-label">🎉 幸 运 之 星 🎉</div>
+        <div class="reel" id="reel">准备开始</div>
+      </div>
+
+      <div class="countdown" id="countdown"></div>
+    </div>
+
+    <div class="reveal" id="reveal">
+      <div class="reveal-inner">
+        <div class="reveal-congrats">🎉 恭 喜 中 奖 🎉</div>
+        <div class="reveal-name" id="reveal-name"></div>
+        <div class="reveal-prize" id="reveal-prize"></div>
+        <div class="reveal-sponsor" id="reveal-sponsor"></div>
+      </div>
+    </div>
+
+    <canvas id="confetti"></canvas>
+    <div class="motto">团 结 · 专 业 · 创 新 · 共 赢</div>
+
+    <script type="module" src="./draw.ts"></script>
+  </body>
+</html>

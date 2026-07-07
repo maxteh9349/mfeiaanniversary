@@ -1,0 +1,92 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #04060f; }
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  color: #eaf2ff;
+}
+
+#scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+#stage {
+  position: fixed; inset: 0; z-index: 2;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 3vh 2vw; pointer-events: none; text-align: center;
+}
+
+.draw-header { margin-top: 1vh; }
+.draw-title { font-size: clamp(20px, 3.2vw, 44px); letter-spacing: 2px; text-shadow: 0 0 20px rgba(56, 225, 255, 0.5); }
+.draw-title b { color: #38e1ff; }
+.draw-sub { margin-top: 8px; font-size: clamp(16px, 2vw, 26px); letter-spacing: 12px; color: #ffd266; }
+
+/* current prize */
+.prize-card {
+  margin-top: 3vh; padding: 14px 34px; border-radius: 16px;
+  background: rgba(14, 28, 64, 0.55); border: 1px solid rgba(255, 210, 102, 0.4);
+  box-shadow: 0 0 40px rgba(255, 180, 60, 0.15);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.prize-level {
+  font-size: clamp(14px, 1.4vw, 20px); color: #06122e; font-weight: 800;
+  background: linear-gradient(90deg, #ffd266, #ff9f43); padding: 3px 16px; border-radius: 999px;
+}
+.prize-img { max-height: 16vh; max-width: 40vw; border-radius: 10px; object-fit: contain; }
+.prize-name { font-size: clamp(22px, 3vw, 40px); font-weight: 800; }
+.prize-sponsor { font-size: clamp(12px, 1.2vw, 18px); color: #9fd6ff; }
+
+/* rolling reel */
+.reel-wrap {
+  margin-top: auto; margin-bottom: auto;
+  display: flex; flex-direction: column; align-items: center; gap: 2vh;
+}
+.reel-label { font-size: clamp(16px, 1.8vw, 28px); letter-spacing: 8px; color: #ffd266; }
+.reel {
+  min-width: 40vw; padding: 3vh 6vw; border-radius: 20px;
+  font-size: clamp(40px, 9vw, 140px); font-weight: 900; line-height: 1.1;
+  background: rgba(8, 16, 38, 0.6); border: 2px solid rgba(56, 225, 255, 0.5);
+  box-shadow: inset 0 0 60px rgba(56, 225, 255, 0.12), 0 0 40px rgba(56, 225, 255, 0.2);
+  text-shadow: 0 0 24px rgba(56, 225, 255, 0.6); transition: color 0.2s;
+}
+.reel.locked {
+  color: #ffd266; border-color: #ffd266;
+  text-shadow: 0 0 30px rgba(255, 210, 102, 0.9);
+  animation: pop 0.5s ease;
+}
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+
+/* countdown */
+.countdown {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3;
+  font-size: clamp(80px, 18vw, 260px); font-weight: 900; color: #38e1ff;
+  text-shadow: 0 0 50px rgba(56, 225, 255, 0.8); pointer-events: none;
+}
+.countdown.tick { animation: cd 0.7s ease; }
+@keyframes cd { 0% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; } }
+
+/* winner reveal overlay */
+.reveal {
+  position: fixed; inset: 0; z-index: 5; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at center, rgba(10, 30, 70, 0.7), rgba(4, 6, 15, 0.92));
+  opacity: 0; visibility: hidden; transition: opacity 0.4s;
+}
+.reveal.show { opacity: 1; visibility: visible; }
+.reveal-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 2vh;
+  transform: scale(0.7); transition: transform 0.5s cubic-bezier(0.18, 1.4, 0.4, 1);
+}
+.reveal.show .reveal-inner { transform: scale(1); }
+.reveal-congrats { font-size: clamp(22px, 3vw, 44px); letter-spacing: 8px; color: #ffd266; }
+.reveal-name {
+  font-size: clamp(50px, 12vw, 200px); font-weight: 900; color: #fff;
+  text-shadow: 0 0 40px rgba(255, 210, 102, 0.9), 0 0 80px rgba(56, 225, 255, 0.5);
+}
+.reveal-prize { font-size: clamp(22px, 3vw, 46px); font-weight: 700; color: #38e1ff; }
+.reveal-sponsor { font-size: clamp(14px, 1.4vw, 22px); color: #9fd6ff; }
+
+#confetti { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
+
+.motto {
+  position: fixed; bottom: 2vh; left: 0; right: 0; z-index: 2;
+  text-align: center; letter-spacing: 10px; color: rgba(159, 214, 255, 0.7);
+  font-size: clamp(12px, 1.4vw, 20px); pointer-events: none;
+}
