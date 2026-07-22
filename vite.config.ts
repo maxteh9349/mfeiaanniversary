@@ -14,7 +14,6 @@ const FRIENDLY_ROUTES: Record<string, string> = {
   "/screen": "/apps/screen/",
   "/admin": "/apps/admin/",
   "/draw": "/apps/draw/",
-  "/preview": "/apps/preview/",
 };
 function friendlyRoutesDev(): Plugin {
   return {
@@ -53,7 +52,6 @@ export default defineConfig({
         checkin: resolve(__dirname, "apps/checkin/index.html"),
         admin: resolve(__dirname, "apps/admin/index.html"),
         draw: resolve(__dirname, "apps/draw/index.html"),
-        preview: resolve(__dirname, "apps/preview/index.html"),
       },
     },
   },

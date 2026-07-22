@@ -142,6 +142,14 @@ const backend: Backend = {
   async triggerSpawn(id) {
     await fetch(`/api/admin/trigger/${id}`, { method: "POST" });
   },
+  async getGuestFeedHidden() {
+    const res = await fetch("/api/config");
+    const { guestFeedHidden } = (await res.json()) as { guestFeedHidden: boolean };
+    return !!guestFeedHidden;
+  },
+  async setGuestFeedHidden(hidden) {
+    await postJson("/api/admin/config", { guestFeedHidden: hidden });
+  },
 
   // ---- lucky draw: Supabase-only. Local build stubs these (runtime is supabase). ----
   listPrizes: drawUnavailable,

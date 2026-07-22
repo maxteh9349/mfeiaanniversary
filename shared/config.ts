@@ -11,6 +11,7 @@ export const DEFAULTS = {
   recentLimit: 10,
   sponsorIntervalSec: 6,
   slogan: "携手创新 · 共塑未来",
+  guestFeedHidden: false,
 } as const;
 
 // Lucky-draw presentation timing (spec: total roll 8–15s, configurable).

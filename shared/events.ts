@@ -37,6 +37,12 @@ export interface ConfigMessage {
   maxAvatars?: number;
   /** Min seconds between spawns dequeued from the spawn queue. */
   spawnIntervalSec?: number;
+  /**
+   * Hide the "最新签到嘉宾" panel AND suppress the full-screen welcome poster,
+   * so the big screen can run other programme segments undisturbed. Check-ins
+   * still record normally — only the guest-facing reveal is muted.
+   */
+  guestFeedHidden?: boolean;
 }
 
 /** Sent once on connect so a freshly opened screen can repopulate the HUD. */
@@ -126,9 +132,9 @@ export type DrawEvent = DrawRollStart | DrawReveal | DrawReset;
 export const DRAW_CHANNEL = "draw";
 
 /** Honorifics shown AFTER the name (Chinese convention); all others go before. */
-const POSTFIX_TITLES = new Set(["先生", "女士", "博士"]);
+const POSTFIX_TITLES = new Set(["先生", "女士", "小姐", "太太", "博士", "教授"]);
 
-/** Combine a guest's title + name for display (no space). 先生/女士/博士 go after. */
+/** Combine a guest's title + name for display (no space). 先生/女士/小姐/太太/博士/教授 go after. */
 export function displayName(g: { title: string | null; name: string }): string {
   const t = (g.title ?? "").trim();
   if (!t) return g.name;

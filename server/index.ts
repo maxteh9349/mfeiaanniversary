@@ -59,12 +59,14 @@ interface Control {
   paused: boolean;
   maxAvatars: number;
   spawnIntervalSec: number;
+  guestFeedHidden: boolean;
 }
 const control: Control = {
   lite: DEFAULTS.lite,
   paused: false,
   maxAvatars: DEFAULTS.maxAvatars,
   spawnIntervalSec: DEFAULTS.spawnIntervalSec,
+  guestFeedHidden: DEFAULTS.guestFeedHidden,
 };
 
 const app = express();
@@ -120,12 +122,17 @@ app.post("/api/admin/trigger/:id", (req, res) => {
   res.json({ ok: true });
 });
 
+app.get("/api/config", (_req, res) => {
+  res.json(control);
+});
+
 app.post("/api/admin/config", (req, res) => {
-  const { lite, paused, maxAvatars, spawnIntervalSec } = req.body ?? {};
+  const { lite, paused, maxAvatars, spawnIntervalSec, guestFeedHidden } = req.body ?? {};
   if (typeof lite === "boolean") control.lite = lite;
   if (typeof paused === "boolean") control.paused = paused;
   if (typeof maxAvatars === "number") control.maxAvatars = maxAvatars;
   if (typeof spawnIntervalSec === "number") control.spawnIntervalSec = spawnIntervalSec;
+  if (typeof guestFeedHidden === "boolean") control.guestFeedHidden = guestFeedHidden;
   broadcast(configMessage());
   res.json({ ok: true, control });
 });
@@ -181,7 +188,7 @@ if (isProd) {
   const dist = resolve(__dirname, "../dist");
   app.use(express.static(dist));
   // Friendly routes -> built html entries.
-  for (const page of ["screen", "checkin", "admin", "preview"]) {
+  for (const page of ["screen", "checkin", "admin"]) {
     app.get(`/${page}`, (_req, res) => res.sendFile(resolve(dist, `apps/${page}/index.html`)));
   }
   app.get("/", (_req, res) => res.redirect("/checkin"));
@@ -223,6 +230,7 @@ function configMessage(): ConfigMessage {
     paused: control.paused,
     maxAvatars: control.maxAvatars,
     spawnIntervalSec: control.spawnIntervalSec,
+    guestFeedHidden: control.guestFeedHidden,
   };
 }
 

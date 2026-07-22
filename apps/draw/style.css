@@ -13,10 +13,27 @@ body {
   padding: 3vh 2vw; pointer-events: none; text-align: center;
 }
 
+/* ---- chamfered tech box (reusable, ported from the big screen) ---- */
+.tech-box {
+  position: relative; padding: 2px;
+  background: linear-gradient(135deg, rgba(56, 225, 255, 0.9), rgba(42, 108, 255, 0.4));
+  clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c));
+}
+.tech-inner {
+  height: 100%; background: rgba(8, 16, 38, 0.72); backdrop-filter: blur(8px);
+  clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c));
+}
+
 .draw-header { margin-top: 1vh; }
-.draw-title { font-size: clamp(20px, 3.2vw, 44px); letter-spacing: 2px; text-shadow: 0 0 20px rgba(56, 225, 255, 0.5); }
-.draw-title b { color: #38e1ff; }
-.draw-sub { margin-top: 8px; font-size: clamp(16px, 2vw, 26px); letter-spacing: 12px; color: #ffd266; }
+.title-box { display: inline-block; --c: 18px; filter: drop-shadow(0 6px 22px rgba(42, 108, 255, 0.4)); }
+.title-box .tech-inner { padding: 12px clamp(20px, 3vw, 54px); }
+.draw-title {
+  font-size: clamp(20px, 3.2vw, 44px); letter-spacing: 2px; font-weight: 900; white-space: nowrap;
+  background: linear-gradient(180deg, #ffffff, #bfe6ff);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.draw-title b { color: #38e1ff; -webkit-text-fill-color: #38e1ff; }
+.draw-sub { margin-top: 10px; font-size: clamp(16px, 2vw, 26px); letter-spacing: 12px; color: #ffd266; }
 
 /* current prize */
 .prize-card {
@@ -32,6 +49,8 @@ body {
 .prize-img { max-height: 16vh; max-width: 40vw; border-radius: 10px; object-fit: contain; }
 .prize-name { font-size: clamp(22px, 3vw, 40px); font-weight: 800; }
 .prize-sponsor { font-size: clamp(12px, 1.2vw, 18px); color: #9fd6ff; }
+.sp-label { font-size: 0.72em; letter-spacing: 4px; opacity: 0.7; margin-bottom: 1px; }
+.sp-name { font-weight: 700; }
 
 /* rolling reel */
 .reel-wrap {

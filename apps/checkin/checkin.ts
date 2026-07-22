@@ -15,50 +15,59 @@ function esc(s: string): string {
 function renderNewGuest(): void {
   h(`
     <h2 class="step-title">新嘉宾登记</h2>
-    <label class="lbl">称谓</label>
-    <div class="gender" id="title-group">
-      <button class="g-btn" data-t="先生">先生</button>
-      <button class="g-btn" data-t="女士">女士</button>
-      <button class="g-btn" data-t="拿督">拿督</button>
-      <button class="g-btn" data-t="拿督斯里">拿督斯里</button>
-      <button class="g-btn" data-t="丹斯里">丹斯里</button>
-      <button class="g-btn" data-t="博士">博士</button>
-      <button class="g-btn" data-t="__other">其他（请填写）</button>
-    </div>
+    <label class="lbl">称谓 *</label>
+    <select id="title" class="field select">
+      <option value="">请选择称谓</option>
+      <optgroup label="国家荣誉">
+        <option value="丹斯里">丹斯里（Tan Sri）</option>
+        <option value="丹斯里夫人">丹斯里夫人（Puan Sri）</option>
+        <option value="拿督斯里">拿督斯里（Dato' Sri）</option>
+        <option value="拿汀斯里">拿汀斯里（Datin Sri）</option>
+        <option value="拿督">拿督（Dato'）</option>
+        <option value="拿汀">拿汀（Datin）</option>
+      </optgroup>
+      <optgroup label="学术">
+        <option value="教授">教授（Prof.）</option>
+        <option value="博士">博士（Dr.）</option>
+      </optgroup>
+      <optgroup label="一般">
+        <option value="先生">先生</option>
+        <option value="女士">女士</option>
+        <option value="小姐">小姐</option>
+        <option value="太太">太太</option>
+      </optgroup>
+      <option value="__other">其他（请填写）</option>
+    </select>
     <input id="title-other" class="field" type="text" placeholder="请填写称谓" hidden />
     <label class="lbl">姓名 *</label>
     <input id="name" class="field" type="text" placeholder="您的姓名" />
     <label class="lbl">公司 / 单位</label>
     <input id="company" class="field" type="text" placeholder="选填" />
+    <p id="form-err" class="form-err"></p>
     <button id="submit" class="primary-btn">确认签到</button>
   `);
-  let title = "";
+  const select = document.getElementById("title") as HTMLSelectElement;
   const otherInput = document.getElementById("title-other") as HTMLInputElement;
-  view.querySelectorAll<HTMLElement>(".g-btn").forEach((b) =>
-    b.addEventListener("click", () => {
-      view.querySelectorAll(".g-btn").forEach((x) => x.classList.remove("active"));
-      b.classList.add("active");
-      const t = b.dataset.t ?? "";
-      if (t === "__other") {
-        otherInput.hidden = false;
-        otherInput.focus();
-        title = otherInput.value.trim();
-      } else {
-        otherInput.hidden = true;
-        title = t;
-      }
-    }),
-  );
-  otherInput.addEventListener("input", () => {
-    title = otherInput.value.trim();
+  const nameInput = document.getElementById("name") as HTMLInputElement;
+  const errEl = document.getElementById("form-err") as HTMLElement;
+
+  select.addEventListener("change", () => {
+    otherInput.hidden = select.value !== "__other";
+    if (!otherInput.hidden) otherInput.focus();
   });
+
+  function fail(message: string, focus: HTMLElement): void {
+    errEl.textContent = message;
+    focus.focus();
+  }
+
   (document.getElementById("submit") as HTMLElement).addEventListener("click", () => {
-    const name = (document.getElementById("name") as HTMLInputElement).value.trim();
+    errEl.textContent = "";
+    const title = select.value === "__other" ? otherInput.value.trim() : select.value;
+    if (!title) return fail("请选择称谓", select.value === "__other" ? otherInput : select);
+    const name = nameInput.value.trim();
+    if (!name) return fail("请填写姓名", nameInput);
     const company = (document.getElementById("company") as HTMLInputElement).value.trim();
-    if (!name) {
-      (document.getElementById("name") as HTMLInputElement).focus();
-      return;
-    }
     submit({ name, company, title });
   });
 }

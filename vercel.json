@@ -1,13 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:supabase",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/checkin", "destination": "/apps/checkin/index.html" },
     { "source": "/screen", "destination": "/apps/screen/index.html" },
     { "source": "/admin", "destination": "/apps/admin/index.html" },
     { "source": "/draw", "destination": "/apps/draw/index.html" },
-    { "source": "/preview", "destination": "/apps/preview/index.html" },
     { "source": "/", "destination": "/apps/checkin/index.html" }
   ]
 }

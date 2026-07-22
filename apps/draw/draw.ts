@@ -16,6 +16,20 @@ const PRIZE_LEVELS: Record<Prize["level"], string> = {
 const $ = (id: string) => document.getElementById(id) as HTMLElement;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** Render the sponsor as two stacked lines — "鸣谢" caption on top, name below.
+ *  Built with textContent (not innerHTML) so operator-entered names stay inert. */
+function setSponsor(el: HTMLElement, sponsor: string | null): void {
+  el.textContent = "";
+  if (!sponsor) return;
+  const label = document.createElement("div");
+  label.className = "sp-label";
+  label.textContent = "鸣谢";
+  const name = document.createElement("div");
+  name.className = "sp-name";
+  name.textContent = sponsor;
+  el.append(label, name);
+}
+
 // Ambient 3D backdrop — reuse the check-in lobby world (no Director/HUD).
 const world = new World($("scene") as HTMLCanvasElement);
 world.scene.add(buildBackdrop());
@@ -27,7 +41,7 @@ const confetti = new Confetti($("confetti") as HTMLCanvasElement);
 function setPrizeCard(prize: Prize): void {
   $("prize-level").textContent = PRIZE_LEVELS[prize.level] ?? prize.level;
   $("prize-name").textContent = prize.name;
-  $("prize-sponsor").textContent = prize.sponsor ? `鸣谢 ${prize.sponsor}` : "";
+  setSponsor($("prize-sponsor"), prize.sponsor);
   const img = $("prize-img") as HTMLImageElement;
   if (prize.imageUrl) {
     img.src = prize.imageUrl;
@@ -52,7 +66,7 @@ async function runCountdown(sec: number): Promise<void> {
 function showReveal(prize: Prize, winner: Winner): void {
   $("reveal-name").textContent = winner.guestName;
   $("reveal-prize").textContent = `${PRIZE_LEVELS[prize.level] ?? prize.level} · ${prize.name}`;
-  $("reveal-sponsor").textContent = prize.sponsor ? `鸣谢 ${prize.sponsor}` : "";
+  setSponsor($("reveal-sponsor"), prize.sponsor);
   $("reveal").classList.add("show");
   confetti.burst(DRAW_DEFAULTS.confettiMs);
 }

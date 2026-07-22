@@ -67,6 +67,13 @@ async function getSetting(key: string): Promise<string | null> {
   return (data as { value: string } | null)?.value ?? null;
 }
 
+/** settings key holding the guest-feed mute flag ("1" = hidden). */
+const GUEST_FEED_KEY = "guestFeedHidden";
+
+async function fetchGuestFeedHidden(): Promise<boolean> {
+  return (await getSetting(GUEST_FEED_KEY)) === "1";
+}
+
 async function fetchSponsors(): Promise<{ logos: SponsorLogo[]; intervalSec: number }> {
   const { data } = await supabase
     .from("sponsors")
@@ -251,10 +258,11 @@ const backend: Backend = {
 
     // Initial snapshot + sponsor/text push (the local server did this on WS connect).
     void (async () => {
-      const [stats, sponsors, slogan, crowd] = await Promise.all([
+      const [stats, sponsors, slogan, guestFeedHidden, crowd] = await Promise.all([
         fetchStats(),
         fetchSponsors(),
         getSetting("slogan"),
+        fetchGuestFeedHidden(),
         supabase
           .from("guests")
           .select("*")
@@ -266,6 +274,7 @@ const backend: Backend = {
       handlers.onSnapshot(stats.total, stats.recent, ((crowd.data ?? []) as GuestRow[]).map(rowToGuest));
       handlers.onSponsors(sponsors.logos, sponsors.intervalSec);
       handlers.onTexts(slogan ?? DEFAULTS.slogan);
+      handlers.onConfig({ guestFeedHidden });
     })();
 
     // Spawn: a guest row flips to checked_in (fresh re-scans don't update the row).
@@ -285,6 +294,7 @@ const backend: Backend = {
       .on("postgres_changes", { event: "*", schema: "public", table: "settings" }, () => {
         void getSetting("slogan").then((s) => handlers.onTexts(s ?? DEFAULTS.slogan));
         void fetchSponsors().then((s) => handlers.onSponsors(s.logos, s.intervalSec));
+        void fetchGuestFeedHidden().then((guestFeedHidden) => handlers.onConfig({ guestFeedHidden }));
       })
       .subscribe();
 
@@ -338,6 +348,14 @@ const backend: Backend = {
       event: "replay",
       payload: { guest: rowToGuest(data as GuestRow) },
     });
+  },
+
+  getGuestFeedHidden() {
+    return fetchGuestFeedHidden();
+  },
+  async setGuestFeedHidden(hidden) {
+    const { error } = await supabase.from("settings").upsert({ key: GUEST_FEED_KEY, value: hidden ? "1" : "0" });
+    if (error) throw error;
   },
 
   // ---- lucky draw ----
