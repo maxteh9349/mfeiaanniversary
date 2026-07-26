@@ -11,6 +11,19 @@ function esc(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 }
 
+// ---- header slogan (kept in sync with the big screen) ---------------------
+async function syncSlogan(): Promise<void> {
+  const el = document.querySelector(".slogan");
+  if (!el) return;
+  try {
+    const backend = await getBackend();
+    const { slogan } = await backend.getTexts();
+    if (slogan) el.textContent = slogan;
+  } catch {
+    // offline / backend unreachable: keep the markup default
+  }
+}
+
 // ---- view -----------------------------------------------------------------
 function renderNewGuest(): void {
   h(`
@@ -101,3 +114,8 @@ function renderSuccess(guest: Guest, fresh: boolean): void {
 }
 
 renderNewGuest();
+void syncSlogan();
+// A phone left open re-syncs when the guest comes back to the tab.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) void syncSlogan();
+});
