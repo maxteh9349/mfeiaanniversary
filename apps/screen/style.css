@@ -90,6 +90,10 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 /* ---- right: counter + sponsor ---- */
 .hud-right { position: absolute; top: 130px; right: 34px; width: 178px; display: flex; flex-direction: column; gap: 14px; }
 .counter-card .tech-inner, .sponsor-card .tech-inner { padding: 11px; text-align: center; }
+.counter-badge {
+  font-size: 15px; font-weight: 700; letter-spacing: 2px; color: #fff;
+  padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border);
+}
 .counter-label, .sponsor-label { color: #cfe8ff; font-size: 12px; letter-spacing: 2px; }
 .counter-num { font-size: 46px; font-weight: 900; line-height: 1; margin: 4px 0; color: #fff; text-shadow: 0 0 18px rgba(56, 225, 255, 0.6); }
 .counter-unit { color: var(--muted); font-size: 12px; }
