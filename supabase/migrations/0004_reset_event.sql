@@ -14,13 +14,15 @@ create or replace function public.reset_event()
 as $$
 begin
   -- FK-safe order: winners reference guests+prizes; checkins reference guests.
-  delete from public.winners;
-  delete from public.draw_audit;
-  delete from public.checkins;
-  delete from public.guests;
+  -- `where true` satisfies Supabase's safeupdate guard, which blocks bare
+  -- DELETE/UPDATE (no WHERE) even inside a SECURITY DEFINER function.
+  delete from public.winners    where true;
+  delete from public.draw_audit where true;
+  delete from public.checkins   where true;
+  delete from public.guests     where true;
   -- Keep prizes, but restore their pools and re-activate any archived ones so the
   -- draw starts fresh.
-  update public.prizes set remaining = quantity, status = 'active';
+  update public.prizes set remaining = quantity, status = 'active' where true;
 end;
 $$;
 
