@@ -14,6 +14,12 @@ const WINNER_STATUS: Record<WinnerStatus, string> = {
   forfeit: "已弃权",
 };
 
+// ID-only console login: the typed ID maps to a Supabase account
+// <id>@mfeia.local, signed in with this shared, build-embedded password.
+// (Low-security by design — the venue console is gated by knowing a valid ID.)
+const CONSOLE_DOMAIN = "mfeia.local";
+const CONSOLE_PW = "mfeia-console-2026";
+
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 // Wrapped in an async IIFE (not top-level await) so the build keeps the default
@@ -209,8 +215,7 @@ void (async () => {
       overlay.innerHTML = `
         <form class="login-card">
           <h2>运维台登录</h2>
-          <input id="login-email" type="email" placeholder="邮箱" autocomplete="username" />
-          <input id="login-pw" type="password" placeholder="密码" autocomplete="current-password" />
+          <input id="login-id" type="text" placeholder="ID" autocomplete="username" autocapitalize="off" autocorrect="off" />
           <button id="login-btn" type="submit">登录</button>
           <div id="login-err" class="msg"></div>
         </form>`;
@@ -218,10 +223,15 @@ void (async () => {
       const err = overlay.querySelector("#login-err") as HTMLElement;
       (overlay.querySelector(".login-card") as HTMLFormElement).addEventListener("submit", async (e) => {
         e.preventDefault();
+        const id = (overlay.querySelector("#login-id") as HTMLInputElement).value.trim().toLowerCase();
+        if (!id) {
+          err.textContent = "请输入 ID";
+          return;
+        }
         err.textContent = "登录中…";
-        const email = (overlay.querySelector("#login-email") as HTMLInputElement).value.trim();
-        const pw = (overlay.querySelector("#login-pw") as HTMLInputElement).value;
-        const { error } = await backend.auth.signIn(email, pw);
+        // Map the ID to its fixed-domain Supabase account + shared console password.
+        const email = id.includes("@") ? id : `${id}@${CONSOLE_DOMAIN}`;
+        const { error } = await backend.auth.signIn(email, CONSOLE_PW);
         if (error) {
           err.textContent = `登录失败：${error}`;
           return;
