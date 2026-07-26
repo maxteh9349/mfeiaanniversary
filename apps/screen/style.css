@@ -67,7 +67,7 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 
 /* ---- top-left: MFEIA logo card (mirrors the sponsor card size) ---- */
 .brand-card { position: absolute; top: 36px; left: 34px; width: 178px; }
-.brand-card .tech-inner { min-height: 134px; display: flex; align-items: center; justify-content: center; padding: 11px; }
+.brand-card .tech-inner { min-height: 138px; display: flex; align-items: center; justify-content: center; padding: 11px; }
 .brand-card .logo-cog { width: 104px; height: 104px; margin: 0; }
 
 /* ---- left: recent check-ins ---- */
@@ -93,8 +93,9 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .ri-time { font-size: 11px; color: var(--muted); align-self: center; }
 
 /* ---- right: counter + sponsor ---- */
-.hud-right { position: absolute; top: 36px; right: 34px; width: 178px; display: flex; flex-direction: column; gap: 14px; }
+.hud-right { position: absolute; top: 36px; right: 34px; width: 178px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
 .counter-card .tech-inner, .sponsor-card .tech-inner { padding: 11px; text-align: center; }
+.sponsor-card .tech-inner { display: flex; align-items: center; justify-content: center; min-height: 138px; }
 .counter-badge {
   font-size: 15px; font-weight: 700; letter-spacing: 2px; color: #fff;
   padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border);
@@ -102,12 +103,12 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .counter-label, .sponsor-label { color: #cfe8ff; font-size: 12px; letter-spacing: 2px; }
 .counter-num { font-size: 46px; font-weight: 900; line-height: 1; margin: 4px 0; color: #fff; text-shadow: 0 0 18px rgba(56, 225, 255, 0.6); }
 .counter-unit { color: var(--muted); font-size: 12px; }
-.sponsor-logo { background: #fff; border-radius: 7px; margin-top: 8px; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; }
-.sponsor-img { max-width: 100%; max-height: 48px; object-fit: contain; transition: opacity 0.18s ease; }
+.sponsor-logo { background: #fff; border-radius: 7px; padding: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 104px; width: 100%; }
+.sponsor-img { max-width: 100%; max-height: 104px; object-fit: contain; transition: opacity 0.18s ease; }
 .sponsor-img.fade { opacity: 0; }
 .hex-mark { width: 26px; height: 26px; }
 .hex-text { color: #2a2a2a; font-size: 17px; font-weight: 800; letter-spacing: 1px; }
-.sponsor-sub { color: var(--muted); font-size: 12px; letter-spacing: 3px; margin-top: 8px; }
+.sponsor-sub { color: var(--muted); font-size: 12px; letter-spacing: 3px; }
 
 /* ---- bottom: flow + hint + clock ---- */
 .hud-bottom {
