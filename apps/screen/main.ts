@@ -46,6 +46,10 @@ getBackend().then((backend) =>
     },
     onConfig(cfg) {
       if (typeof cfg.maxAvatars === "number") director.maxAvatars = cfg.maxAvatars;
+      if (typeof cfg.guestFeedHidden === "boolean") {
+        const feed = document.querySelector(".hud-left") as HTMLElement | null;
+        if (feed) feed.style.display = cfg.guestFeedHidden ? "none" : "";
+      }
     },
     onSponsors(logos, intervalSec) {
       hud.setSponsors(logos, intervalSec);

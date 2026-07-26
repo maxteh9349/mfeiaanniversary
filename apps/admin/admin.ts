@@ -75,6 +75,20 @@ void (async () => {
     renderList(await backend.searchGuests(q));
   });
 
+  // Toggle the big-screen "最新签到嘉宾" panel (checked = shown). The screen
+  // reacts live via its config subscription.
+  const feedToggle = $<HTMLInputElement>("feed-toggle");
+  void backend.getGuestFeedHidden().then((hidden) => {
+    feedToggle.checked = !hidden;
+  });
+  feedToggle.addEventListener("change", async () => {
+    try {
+      await backend.setGuestFeedHidden(!feedToggle.checked);
+    } catch {
+      feedToggle.checked = !feedToggle.checked; // revert on failure
+    }
+  });
+
   // Danger zone: wipe all attendee + draw data. Double-confirm — it is irreversible.
   const clearMsg = $("clear-msg");
   $("clear-all").addEventListener("click", async () => {

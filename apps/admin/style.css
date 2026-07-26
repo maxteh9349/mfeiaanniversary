@@ -10,6 +10,8 @@ input, select, button { font-size: 15px; padding: 10px 12px; border-radius: 8px;
 button { background: linear-gradient(90deg, #38e1ff, #2a6cff); color: #06122e; font-weight: 700; border: none; cursor: pointer; }
 .msg { color: #ffd266; margin-top: 10px; min-height: 18px; }
 .total { color: #ffd266; margin-left: 10px; }
+.feed-row { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; color: #cfe6ff; cursor: pointer; user-select: none; }
+.feed-row input { width: 18px; height: 18px; padding: 0; accent-color: #38e1ff; cursor: pointer; }
 #search { width: 100%; margin-bottom: 12px; }
 .list { list-style: none; padding: 0; }
 .list li { display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid rgba(138, 160, 200, 0.15); }
