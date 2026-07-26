@@ -193,6 +193,11 @@ export function getTotal(): number {
   return (stmt.total.get() as unknown as { n: number }).n;
 }
 
+/** Wipe all check-ins + guests (keeps sponsors & settings). Mirrors reset-guests.ts. */
+export function resetAll(): void {
+  db.exec("DELETE FROM checkins; DELETE FROM guests;");
+}
+
 export function getRecent(limit: number): Guest[] {
   return (stmt.recent.all(limit) as unknown as GuestRow[]).map(rowToGuest);
 }

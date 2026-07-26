@@ -150,6 +150,10 @@ const backend: Backend = {
   async setGuestFeedHidden(hidden) {
     await postJson("/api/admin/config", { guestFeedHidden: hidden });
   },
+  async resetEvent() {
+    const res = await postJson("/api/admin/reset", {});
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  },
 
   // ---- lucky draw: Supabase-only. Local build stubs these (runtime is supabase). ----
   listPrizes: drawUnavailable,

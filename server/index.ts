@@ -29,6 +29,7 @@ import {
   getSponsorIntervalSec,
   getTotal,
   listSponsors,
+  resetAll,
   searchGuests,
   setGuestPhoto,
   setSlogan,
@@ -135,6 +136,19 @@ app.post("/api/admin/config", (req, res) => {
   if (typeof guestFeedHidden === "boolean") control.guestFeedHidden = guestFeedHidden;
   broadcast(configMessage());
   res.json({ ok: true, control });
+});
+
+app.post("/api/admin/reset", (_req, res) => {
+  resetAll();
+  queue.length = 0; // drop any pending spawns for now-deleted guests
+  // Push a fresh (empty) snapshot so every open screen clears its HUD + crowd.
+  broadcast({
+    type: "snapshot",
+    total: getTotal(),
+    recent: getRecent(DEFAULTS.recentLimit),
+    crowd: getRecent(control.maxAvatars),
+  });
+  res.json({ ok: true });
 });
 
 app.get("/api/qr", async (_req, res) => {

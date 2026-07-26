@@ -299,11 +299,13 @@ const backend: Backend = {
       .subscribe();
 
     // Replay: admin re-triggers an existing guest without a DB write.
+    // Reload: admin wiped all data (一键清除) — reload to rebuild from the snapshot.
     supabase
       .channel("screen", { config: { broadcast: { self: false } } })
       .on("broadcast", { event: "replay" }, ({ payload }) => {
         handlers.onSpawn((payload as { guest: Guest }).guest, total, true);
       })
+      .on("broadcast", { event: "reload" }, () => location.reload())
       .subscribe();
   },
 
@@ -356,6 +358,14 @@ const backend: Backend = {
   async setGuestFeedHidden(hidden) {
     const { error } = await supabase.from("settings").upsert({ key: GUEST_FEED_KEY, value: hidden ? "1" : "0" });
     if (error) throw error;
+  },
+
+  async resetEvent() {
+    const { error } = await supabase.rpc("reset_event");
+    if (error) throw error;
+    // Realtime only pushes row-level INSERT/UPDATE; a bulk DELETE won't clear the
+    // screen's HUD/crowd, so tell any open screen to reload itself.
+    await adminChannel().send({ type: "broadcast", event: "reload", payload: {} });
   },
 
   // ---- lucky draw ----

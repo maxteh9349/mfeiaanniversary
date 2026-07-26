@@ -85,6 +85,8 @@ export interface Backend {
   // admin: mute the guest feed (recent panel + welcome poster) during other segments
   getGuestFeedHidden(): Promise<boolean>;
   setGuestFeedHidden(hidden: boolean): Promise<void>;
+  // admin: wipe all attendee + draw data (keeps sponsors/prizes/settings)
+  resetEvent(): Promise<void>;
 
   // ---- lucky draw ----
   // prizes (operator CRUD)

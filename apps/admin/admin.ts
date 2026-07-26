@@ -75,6 +75,27 @@ void (async () => {
     renderList(await backend.searchGuests(q));
   });
 
+  // Danger zone: wipe all attendee + draw data. Double-confirm — it is irreversible.
+  const clearMsg = $("clear-msg");
+  $("clear-all").addEventListener("click", async () => {
+    if (!confirm("确定要清除全部数据吗？\n\n将永久删除：所有签到记录、嘉宾、中奖记录与抽奖日志。\n保留：赞助商、奖品、大屏设置。\n\n此操作不可撤销！")) return;
+    if (!confirm("再次确认：真的要清空吗？")) return;
+    clearMsg.textContent = "清除中…";
+    try {
+      await backend.resetEvent();
+      clearMsg.textContent = "✅ 已清除全部数据";
+      await refreshStats();
+      try {
+        await loadPrizes();
+        await loadWinners();
+      } catch {
+        /* draw is Supabase-only; ignore in local mode */
+      }
+    } catch (err) {
+      clearMsg.textContent = `清除失败：${(err as Error).message}`;
+    }
+  });
+
   // ---- big-screen slogan --------------------------------------------------
   const tMsg = $("t-msg");
   async function loadSlogan(): Promise<void> {
