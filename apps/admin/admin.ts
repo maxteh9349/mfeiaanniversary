@@ -256,6 +256,7 @@ void (async () => {
         <span>${esc(w.guestName)}</span>
         <span class="company">${WINNER_STATUS[w.status] ?? w.status}</span>
         ${w.status === "pending" ? `<button class="w-claim trigger">已领取</button><button class="w-forfeit trigger">弃权</button>` : ""}
+        <button class="w-del trigger">删除</button>
       </li>`,
       )
       .join("");
@@ -375,6 +376,10 @@ void (async () => {
       if (t.classList.contains("w-claim")) await backend.setWinnerStatus(id, "claimed");
       else if (t.classList.contains("w-forfeit")) {
         await backend.setWinnerStatus(id, "forfeit");
+        await loadPrizes();
+      } else if (t.classList.contains("w-del")) {
+        if (!confirm("确定删除这条中奖记录吗？\n若该中奖仍有效，将归还奖品名额与该嘉宾的抽奖资格。")) return;
+        await backend.deleteWinner(id);
         await loadPrizes();
       } else return;
       await loadWinners();

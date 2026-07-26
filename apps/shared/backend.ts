@@ -101,6 +101,7 @@ export interface Backend {
   pickWinner(prizeId: number): Promise<Winner>;
   redraw(winnerId: number): Promise<Winner>;
   setWinnerStatus(winnerId: number, status: WinnerStatus): Promise<void>;
+  deleteWinner(winnerId: number): Promise<void>;
   logDraw(action: "draw_started" | "draw_stopped", prizeId?: number): Promise<void>;
   listWinners(prizeId?: number): Promise<Winner[]>;
   // realtime: presentation subscribes, operator broadcasts animation cues

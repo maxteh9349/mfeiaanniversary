@@ -164,6 +164,7 @@ const backend: Backend = {
   pickWinner: drawUnavailable,
   redraw: drawUnavailable,
   setWinnerStatus: drawUnavailable,
+  deleteWinner: drawUnavailable,
   logDraw: drawUnavailable,
   listWinners: drawUnavailable,
   broadcastDraw: drawUnavailable,

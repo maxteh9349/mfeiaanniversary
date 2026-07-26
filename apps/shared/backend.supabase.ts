@@ -454,6 +454,13 @@ const backend: Backend = {
     });
     if (error) throw error;
   },
+  async deleteWinner(winnerId) {
+    const { error } = await supabase.rpc("draw_delete_winner", {
+      p_winner_id: winnerId,
+      p_operator: await operatorEmail(),
+    });
+    if (error) throw error;
+  },
   async logDraw(action, prizeId) {
     const { error } = await supabase.rpc("draw_log", {
       p_action: action,
