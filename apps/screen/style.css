@@ -65,8 +65,13 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .hud-ai { font-size: 13px; letter-spacing: 2px; color: var(--cyan); }
 .smart-badge .tech-inner { padding: 12px 22px; font-size: 17px; font-weight: 700; letter-spacing: 3px; color: #fff; }
 
+/* ---- top-left: MFEIA logo card (mirrors the sponsor card size) ---- */
+.brand-card { position: absolute; top: 36px; left: 34px; width: 178px; }
+.brand-card .tech-inner { min-height: 134px; display: flex; align-items: center; justify-content: center; padding: 11px; }
+.brand-card .logo-cog { width: 104px; height: 104px; margin: 0; }
+
 /* ---- left: recent check-ins ---- */
-.hud-left { position: absolute; top: 130px; left: 34px; width: 206px; }
+.hud-left { position: absolute; top: 190px; left: 34px; width: 206px; }
 .panel-inner { padding: 11px 13px; }
 .panel-title { color: #cfe8ff; font-size: 14px; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 7px; }
 .recent { list-style: none; }
