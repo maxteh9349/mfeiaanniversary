@@ -481,6 +481,7 @@ const backend: Backend = {
         handlers.onReveal(p.prize, p.winner);
       })
       .on("broadcast", { event: "reset" }, () => handlers.onReset())
+      .on("broadcast", { event: "screen" }, () => handlers.onReturnToScreen?.())
       .subscribe();
 
     // Cold-load / re-sync of prizes so a freshly-opened /draw shows current state.

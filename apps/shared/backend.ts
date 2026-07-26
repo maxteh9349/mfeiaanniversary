@@ -47,6 +47,8 @@ export interface DrawHandlers {
   onRollStart(prize: Prize, reel: string[], countdownMs?: number): void;
   onReveal(prize: Prize, winner: Winner): void;
   onReset(): void;
+  /** Operator ended the draw — the /draw page should return to the lobby /screen. */
+  onReturnToScreen?(): void;
   /** postgres_changes re-sync so a freshly-opened /draw reflects current prizes. */
   onPrizes?(prizes: Prize[]): void;
 }

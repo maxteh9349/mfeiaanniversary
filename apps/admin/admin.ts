@@ -356,6 +356,16 @@ void (async () => {
 
   $("d-fullscreen").addEventListener("click", () => window.open("/draw", "_blank"));
 
+  // End the draw segment: tell the /draw presentation to return to the lobby /screen.
+  $("d-return").addEventListener("click", async () => {
+    try {
+      await backend.broadcastDraw({ type: "screen" });
+      dMsg.textContent = "已通知大屏返回大厅画面";
+    } catch (err) {
+      dMsg.textContent = `返回失败：${(err as Error).message}`;
+    }
+  });
+
   wList.addEventListener("click", async (e) => {
     const li = (e.target as HTMLElement).closest("li") as HTMLElement | null;
     if (!li) return;

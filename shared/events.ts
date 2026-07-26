@@ -126,7 +126,11 @@ export interface DrawReveal {
 export interface DrawReset {
   type: "reset";
 }
-export type DrawEvent = DrawRollStart | DrawReveal | DrawReset;
+/** Tell the /draw presentation to hand the big screen back to the lobby /screen. */
+export interface DrawReturnToScreen {
+  type: "screen";
+}
+export type DrawEvent = DrawRollStart | DrawReveal | DrawReset | DrawReturnToScreen;
 
 /** Supabase Realtime broadcast channel name for the draw presentation. */
 export const DRAW_CHANNEL = "draw";

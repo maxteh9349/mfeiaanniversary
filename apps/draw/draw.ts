@@ -90,6 +90,10 @@ getBackend().then((backend) =>
       $("countdown").textContent = "";
       reel.reset();
     },
+    onReturnToScreen() {
+      // Hand the big screen back to the lobby view after the draw segment.
+      location.href = "/screen";
+    },
     onPrizes(prizes) {
       // Cold-load / re-sync: show the next drawable prize when idle.
       if ($("reveal").classList.contains("show")) return;
