@@ -8,7 +8,7 @@ export const DEFAULTS = {
   maxAvatars: 50,
   spawnIntervalSec: 2.5,
   lite: false,
-  recentLimit: 8,
+  recentLimit: 7,
   sponsorIntervalSec: 6,
   slogan: "携手创新 · 共塑未来",
   guestFeedHidden: false,
