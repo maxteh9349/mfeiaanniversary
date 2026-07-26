@@ -43,6 +43,8 @@ export interface ConfigMessage {
    * still record normally — only the guest-facing reveal is muted.
    */
   guestFeedHidden?: boolean;
+  /** Hide the bottom "签到流程" bar (QR + steps) on the big screen. */
+  checkinFlowHidden?: boolean;
 }
 
 /** Sent once on connect so a freshly opened screen can repopulate the HUD. */

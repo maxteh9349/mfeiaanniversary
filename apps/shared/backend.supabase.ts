@@ -74,6 +74,13 @@ async function fetchGuestFeedHidden(): Promise<boolean> {
   return (await getSetting(GUEST_FEED_KEY)) === "1";
 }
 
+/** settings key holding the check-in-flow bar mute flag ("1" = hidden). */
+const CHECKIN_FLOW_KEY = "checkinFlowHidden";
+
+async function fetchCheckinFlowHidden(): Promise<boolean> {
+  return (await getSetting(CHECKIN_FLOW_KEY)) === "1";
+}
+
 async function fetchSponsors(): Promise<{ logos: SponsorLogo[]; intervalSec: number }> {
   const { data } = await supabase
     .from("sponsors")
@@ -258,11 +265,12 @@ const backend: Backend = {
 
     // Initial snapshot + sponsor/text push (the local server did this on WS connect).
     void (async () => {
-      const [stats, sponsors, slogan, guestFeedHidden, crowd] = await Promise.all([
+      const [stats, sponsors, slogan, guestFeedHidden, checkinFlowHidden, crowd] = await Promise.all([
         fetchStats(),
         fetchSponsors(),
         getSetting("slogan"),
         fetchGuestFeedHidden(),
+        fetchCheckinFlowHidden(),
         supabase
           .from("guests")
           .select("*")
@@ -274,7 +282,7 @@ const backend: Backend = {
       handlers.onSnapshot(stats.total, stats.recent, ((crowd.data ?? []) as GuestRow[]).map(rowToGuest));
       handlers.onSponsors(sponsors.logos, sponsors.intervalSec);
       handlers.onTexts(slogan ?? DEFAULTS.slogan);
-      handlers.onConfig({ guestFeedHidden });
+      handlers.onConfig({ guestFeedHidden, checkinFlowHidden });
     })();
 
     // Spawn: a guest row flips to checked_in (fresh re-scans don't update the row).
@@ -295,6 +303,7 @@ const backend: Backend = {
         void getSetting("slogan").then((s) => handlers.onTexts(s ?? DEFAULTS.slogan));
         void fetchSponsors().then((s) => handlers.onSponsors(s.logos, s.intervalSec));
         void fetchGuestFeedHidden().then((guestFeedHidden) => handlers.onConfig({ guestFeedHidden }));
+        void fetchCheckinFlowHidden().then((checkinFlowHidden) => handlers.onConfig({ checkinFlowHidden }));
       })
       .subscribe();
 
@@ -357,6 +366,13 @@ const backend: Backend = {
   },
   async setGuestFeedHidden(hidden) {
     const { error } = await supabase.from("settings").upsert({ key: GUEST_FEED_KEY, value: hidden ? "1" : "0" });
+    if (error) throw error;
+  },
+  getCheckinFlowHidden() {
+    return fetchCheckinFlowHidden();
+  },
+  async setCheckinFlowHidden(hidden) {
+    const { error } = await supabase.from("settings").upsert({ key: CHECKIN_FLOW_KEY, value: hidden ? "1" : "0" });
     if (error) throw error;
   },
 

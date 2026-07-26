@@ -89,6 +89,19 @@ void (async () => {
     }
   });
 
+  // Toggle the big-screen bottom "签到流程" bar (checked = shown).
+  const flowToggle = $<HTMLInputElement>("flow-toggle");
+  void backend.getCheckinFlowHidden().then((hidden) => {
+    flowToggle.checked = !hidden;
+  });
+  flowToggle.addEventListener("change", async () => {
+    try {
+      await backend.setCheckinFlowHidden(!flowToggle.checked);
+    } catch {
+      flowToggle.checked = !flowToggle.checked; // revert on failure
+    }
+  });
+
   // Danger zone: wipe all attendee + draw data. Double-confirm — it is irreversible.
   const clearMsg = $("clear-msg");
   $("clear-all").addEventListener("click", async () => {

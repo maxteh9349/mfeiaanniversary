@@ -61,6 +61,7 @@ interface Control {
   maxAvatars: number;
   spawnIntervalSec: number;
   guestFeedHidden: boolean;
+  checkinFlowHidden: boolean;
 }
 const control: Control = {
   lite: DEFAULTS.lite,
@@ -68,6 +69,7 @@ const control: Control = {
   maxAvatars: DEFAULTS.maxAvatars,
   spawnIntervalSec: DEFAULTS.spawnIntervalSec,
   guestFeedHidden: DEFAULTS.guestFeedHidden,
+  checkinFlowHidden: DEFAULTS.checkinFlowHidden,
 };
 
 const app = express();
@@ -128,12 +130,13 @@ app.get("/api/config", (_req, res) => {
 });
 
 app.post("/api/admin/config", (req, res) => {
-  const { lite, paused, maxAvatars, spawnIntervalSec, guestFeedHidden } = req.body ?? {};
+  const { lite, paused, maxAvatars, spawnIntervalSec, guestFeedHidden, checkinFlowHidden } = req.body ?? {};
   if (typeof lite === "boolean") control.lite = lite;
   if (typeof paused === "boolean") control.paused = paused;
   if (typeof maxAvatars === "number") control.maxAvatars = maxAvatars;
   if (typeof spawnIntervalSec === "number") control.spawnIntervalSec = spawnIntervalSec;
   if (typeof guestFeedHidden === "boolean") control.guestFeedHidden = guestFeedHidden;
+  if (typeof checkinFlowHidden === "boolean") control.checkinFlowHidden = checkinFlowHidden;
   broadcast(configMessage());
   res.json({ ok: true, control });
 });
@@ -245,6 +248,7 @@ function configMessage(): ConfigMessage {
     maxAvatars: control.maxAvatars,
     spawnIntervalSec: control.spawnIntervalSec,
     guestFeedHidden: control.guestFeedHidden,
+    checkinFlowHidden: control.checkinFlowHidden,
   };
 }
 

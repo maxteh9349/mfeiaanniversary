@@ -50,6 +50,10 @@ getBackend().then((backend) =>
         const feed = document.querySelector(".hud-left") as HTMLElement | null;
         if (feed) feed.style.display = cfg.guestFeedHidden ? "none" : "";
       }
+      if (typeof cfg.checkinFlowHidden === "boolean") {
+        const flow = document.querySelector(".hud-bottom") as HTMLElement | null;
+        if (flow) flow.style.display = cfg.checkinFlowHidden ? "none" : "";
+      }
     },
     onSponsors(logos, intervalSec) {
       hud.setSponsors(logos, intervalSec);

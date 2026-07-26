@@ -25,7 +25,7 @@ export interface CheckinBody {
 export interface ScreenHandlers {
   onSnapshot(total: number, recent: Guest[], crowd: Guest[]): void;
   onSpawn(guest: Guest, total: number, replay?: boolean): void;
-  onConfig(cfg: { lite?: boolean; paused?: boolean; maxAvatars?: number; spawnIntervalSec?: number; guestFeedHidden?: boolean }): void;
+  onConfig(cfg: { lite?: boolean; paused?: boolean; maxAvatars?: number; spawnIntervalSec?: number; guestFeedHidden?: boolean; checkinFlowHidden?: boolean }): void;
   onSponsors(logos: SponsorLogo[], intervalSec: number): void;
   onTexts(slogan: string): void;
 }
@@ -87,6 +87,9 @@ export interface Backend {
   // admin: mute the guest feed (recent panel + welcome poster) during other segments
   getGuestFeedHidden(): Promise<boolean>;
   setGuestFeedHidden(hidden: boolean): Promise<void>;
+  // admin: hide the bottom "签到流程" bar (QR + steps) on the screen
+  getCheckinFlowHidden(): Promise<boolean>;
+  setCheckinFlowHidden(hidden: boolean): Promise<void>;
   // admin: wipe all attendee + draw data (keeps sponsors/prizes/settings)
   resetEvent(): Promise<void>;
 

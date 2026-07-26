@@ -150,6 +150,14 @@ const backend: Backend = {
   async setGuestFeedHidden(hidden) {
     await postJson("/api/admin/config", { guestFeedHidden: hidden });
   },
+  async getCheckinFlowHidden() {
+    const res = await fetch("/api/config");
+    const { checkinFlowHidden } = (await res.json()) as { checkinFlowHidden: boolean };
+    return !!checkinFlowHidden;
+  },
+  async setCheckinFlowHidden(hidden) {
+    await postJson("/api/admin/config", { checkinFlowHidden: hidden });
+  },
   async resetEvent() {
     const res = await postJson("/api/admin/reset", {});
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
