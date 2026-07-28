@@ -53,7 +53,7 @@ function renderNewGuest(): void {
     </select>
     <input id="title-other" class="field" type="text" placeholder="请填写称谓" hidden />
     <label class="lbl">姓名 *</label>
-    <input id="name" class="field" type="text" placeholder="您的姓名" />
+    <input id="name" class="field" type="text" placeholder="您的中文名字" />
     <label class="lbl">公司 / 单位</label>
     <input id="company" class="field" type="text" placeholder="选填" />
     <p id="form-err" class="form-err"></p>

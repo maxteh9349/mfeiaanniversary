@@ -14,6 +14,7 @@ const FRIENDLY_ROUTES: Record<string, string> = {
   "/screen": "/apps/screen/",
   "/admin": "/apps/admin/",
   "/draw": "/apps/draw/",
+  "/stage": "/apps/stage/",
 };
 function friendlyRoutesDev(): Plugin {
   return {
@@ -39,6 +40,7 @@ function friendlyRoutesDev(): Plugin {
 //  - /screen  big-screen 3D digital lobby
 //  - /checkin mobile self check-in
 //  - /admin   operator console
+//  - /stage   dinner-rundown programme segments (speeches, awards, rosters)
 export default defineConfig({
   appType: "mpa",
   publicDir: "assets",
@@ -52,6 +54,7 @@ export default defineConfig({
         checkin: resolve(__dirname, "apps/checkin/index.html"),
         admin: resolve(__dirname, "apps/admin/index.html"),
         draw: resolve(__dirname, "apps/draw/index.html"),
+        stage: resolve(__dirname, "apps/stage/index.html"),
       },
     },
   },

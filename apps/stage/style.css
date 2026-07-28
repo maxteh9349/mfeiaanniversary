@@ -1,0 +1,185 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #04060f; }
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  color: #eaf2ff;
+}
+
+#scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+#stage {
+  position: fixed; inset: 0; z-index: 2;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 3vh 3vw 7vh; pointer-events: none; text-align: center;
+  opacity: 0; visibility: hidden; transition: opacity 0.4s;
+}
+#stage.show { opacity: 1; visibility: visible; }
+
+/* ---- chamfered tech box (shared visual language with /screen + /draw) ---- */
+.tech-box {
+  position: relative; padding: 2px;
+  background: linear-gradient(135deg, rgba(56, 225, 255, 0.9), rgba(42, 108, 255, 0.4));
+  clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c));
+}
+.tech-inner {
+  height: 100%; background: rgba(8, 16, 38, 0.72); backdrop-filter: blur(8px);
+  clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c));
+}
+
+/* ---- header ---- */
+.stage-header { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: none; }
+.title-box { display: inline-block; --c: 18px; filter: drop-shadow(0 6px 22px rgba(42, 108, 255, 0.4)); max-width: 92vw; }
+.title-box .tech-inner { padding: 12px clamp(20px, 3vw, 54px); }
+.stage-title {
+  font-size: clamp(20px, 3vw, 46px); letter-spacing: 2px; font-weight: 900; line-height: 1.25;
+  background: linear-gradient(180deg, #ffffff, #bfe6ff);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.stage-title-en {
+  font-size: clamp(13px, 1.5vw, 22px); color: #7fc6ff; letter-spacing: 1px; max-width: 88vw;
+}
+.stage-title-en:empty { display: none; }
+
+/* ---- panes: one per segment kind, switched by #stage[data-kind] ---- */
+.pane { display: none; width: 100%; flex: 1; min-height: 0; }
+#stage[data-kind="speech"] .pane-speech,
+#stage[data-kind="award"] .pane-award,
+#stage[data-kind="roster"] .pane-roster,
+#stage[data-kind="sponsor_thanks"] .pane-sponsor { display: flex; }
+
+/* title-only segments: centre the header block vertically */
+#stage[data-kind="title"] .stage-header { margin: auto; gap: 3vh; }
+#stage[data-kind="title"] .stage-title { font-size: clamp(30px, 5.4vw, 88px); }
+
+/* ---- speech ---- */
+.pane-speech { flex-direction: column; align-items: center; justify-content: center; gap: 2vh; }
+.speech-label {
+  font-size: clamp(16px, 1.8vw, 28px); letter-spacing: 14px; color: #ffd266; padding-left: 14px;
+}
+.speech-name {
+  font-size: clamp(48px, 10vw, 170px); font-weight: 900; color: #fff; line-height: 1.05;
+  text-shadow: 0 0 40px rgba(255, 210, 102, 0.8), 0 0 90px rgba(56, 225, 255, 0.45);
+}
+.speech-org { font-size: clamp(16px, 2vw, 34px); color: #9fd6ff; max-width: 80vw; }
+
+/* ---- award: current honouree + upcoming queue ---- */
+.pane-award { align-items: center; justify-content: center; gap: clamp(20px, 4vw, 80px); }
+.award-main {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.4vh;
+  min-width: 0;
+}
+.award-counter {
+  font-size: clamp(13px, 1.3vw, 20px); letter-spacing: 3px; color: #7fc6ff;
+  background: rgba(8, 16, 38, 0.6); border: 1px solid rgba(56, 225, 255, 0.45);
+  border-radius: 999px; padding: 3px 18px;
+}
+.award-name {
+  font-size: clamp(46px, 9.5vw, 165px); font-weight: 900; color: #fff; line-height: 1.05;
+  text-shadow: 0 0 40px rgba(255, 210, 102, 0.85), 0 0 90px rgba(56, 225, 255, 0.45);
+  word-break: keep-all;
+}
+.award-en { font-size: clamp(16px, 2.2vw, 38px); font-weight: 700; color: #38e1ff; }
+.award-org { font-size: clamp(14px, 1.5vw, 24px); color: #9fd6ff; max-width: 60vw; }
+.award-en:empty, .award-org:empty, .award-counter:empty { display: none; }
+/* re-run on every honouree change (JS re-adds the class) */
+.award-main.enter { animation: award-in 0.55s cubic-bezier(0.18, 1.4, 0.4, 1); }
+@keyframes award-in {
+  0% { opacity: 0; transform: scale(0.82) translateY(18px); }
+  100% { opacity: 1; transform: none; }
+}
+
+.award-queue {
+  flex: none; width: clamp(180px, 20vw, 320px); align-self: center;
+  background: rgba(8, 16, 38, 0.55); border: 1px solid rgba(56, 225, 255, 0.3);
+  border-radius: 14px; padding: 14px 16px; text-align: left;
+  max-height: 60vh; overflow: hidden;
+}
+.award-queue:empty, .award-queue.hidden { display: none; }
+.queue-title {
+  font-size: clamp(12px, 1.1vw, 17px); letter-spacing: 6px; color: #ffd266;
+  padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid rgba(56, 225, 255, 0.25);
+}
+.award-queue ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.award-queue li {
+  font-size: clamp(14px, 1.4vw, 22px); color: #cfe6ff; display: flex; gap: 8px; align-items: baseline;
+}
+.award-queue li span.qi { color: #4f8fd0; font-size: 0.8em; min-width: 1.6em; }
+
+/* ---- roster ---- */
+.pane-roster { justify-content: center; align-items: stretch; }
+.roster-viewport { flex: 1; min-height: 0; overflow: hidden; display: flex; justify-content: center; padding: 2vh 0; }
+.roster-track { width: 100%; }
+.roster-track.scroll { animation: roster-scroll 40s linear infinite; }
+@keyframes roster-scroll {
+  0%, 6% { transform: translateY(0); }
+  94%, 100% { transform: translateY(var(--shift, 0px)); }
+}
+.roster-group + .roster-group { margin-top: 2.4vh; }
+.roster-group-title {
+  font-size: clamp(15px, 1.7vw, 26px); letter-spacing: 5px; color: #ffd266; margin-bottom: 1vh;
+}
+.roster-names {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 90%), 1fr));
+  gap: 8px clamp(14px, 2vw, 40px);
+}
+.roster-item {
+  display: flex; align-items: baseline; gap: 10px; justify-content: flex-start; text-align: left;
+  padding: 5px 12px; border-left: 3px solid rgba(56, 225, 255, 0.45);
+  background: rgba(8, 16, 38, 0.42);
+}
+.roster-zh { font-size: clamp(17px, 1.9vw, 30px); font-weight: 800; white-space: nowrap; }
+.roster-en { font-size: clamp(12px, 1.1vw, 17px); color: #7fc6ff; }
+.roster-org { font-size: clamp(11px, 1vw, 15px); color: #6f9fd0; }
+.roster-item.lead { border-left-color: #ffd266; background: rgba(40, 30, 8, 0.5); }
+.roster-item.lead .roster-zh { color: #ffd266; }
+
+/* ---- sponsor plaques ---- */
+.pane-sponsor { align-items: center; justify-content: center; }
+.sponsor-plaques {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: clamp(18px, 3vw, 56px); width: 100%;
+}
+.plaque {
+  min-width: min(34vw, 460px); padding: 3.5vh clamp(20px, 3vw, 50px);
+  background: rgba(14, 28, 64, 0.55); border: 1px solid rgba(255, 210, 102, 0.45);
+  border-radius: 16px; box-shadow: 0 0 40px rgba(255, 180, 60, 0.15);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.plaque-label {
+  font-size: clamp(12px, 1.2vw, 18px); color: #06122e; font-weight: 800; letter-spacing: 3px;
+  background: linear-gradient(90deg, #ffd266, #ff9f43); padding: 3px 16px; border-radius: 999px;
+}
+.plaque-name { font-size: clamp(20px, 2.6vw, 42px); font-weight: 900; line-height: 1.2; }
+.plaque-org { font-size: clamp(13px, 1.3vw, 20px); color: #9fd6ff; }
+.plaque-org:empty { display: none; }
+
+/* ---- footer: 颁发人 / 陪同 / 备注 ---- */
+.stage-foot {
+  flex: none; display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 8px clamp(16px, 3vw, 56px); padding-top: 1.6vh;
+}
+.foot-item {
+  font-size: clamp(12px, 1.3vw, 20px); color: #cfe6ff; white-space: pre-line; text-align: center;
+  border-top: 1px solid rgba(56, 225, 255, 0.28); padding-top: 6px;
+}
+.foot-item:empty { display: none; }
+
+/* ---- idle card (shown when no segment is live) ---- */
+.idle {
+  position: fixed; inset: 0; z-index: 3; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3vh; pointer-events: none;
+  transition: opacity 0.4s;
+}
+.idle.hidden { opacity: 0; visibility: hidden; }
+.idle-title {
+  font-size: clamp(24px, 4vw, 68px); font-weight: 900; letter-spacing: 3px;
+  background: linear-gradient(180deg, #ffffff, #bfe6ff);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.idle-sub { font-size: clamp(14px, 1.8vw, 26px); letter-spacing: 12px; color: #ffd266; }
+
+.motto {
+  position: fixed; bottom: 2vh; left: 0; right: 0; z-index: 2;
+  text-align: center; letter-spacing: 10px; color: rgba(159, 214, 255, 0.7);
+  font-size: clamp(12px, 1.4vw, 20px); pointer-events: none;
+}

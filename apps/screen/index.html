@@ -9,6 +9,77 @@
   <body>
     <canvas id="scene"></canvas>
 
+    <!--
+      流程环节叠加层：操作台点「上台」时，把该环节的图片盖在大厅画面上（3D 场景
+      压暗、HUD 照常显示），不再把投影切到 /stage。没上传图片的环节退回标题文字卡。
+      放在 #hud 之前，所以压暗只作用于 3D 场景，HUD 仍浮在最上层。
+    -->
+    <div id="segment-overlay">
+      <div class="seg-frame">
+        <i class="corner tl"></i><i class="corner tr"></i>
+        <i class="corner bl"></i><i class="corner br"></i>
+        <img id="segment-photo" alt="" />
+        <!-- 环节短片：上台即播，播完停在最后一帧等操作台切走。playsinline 防手机全屏接管。 -->
+        <video id="segment-video" playsinline preload="auto"></video>
+        <div id="segment-sound-hint" hidden>🔇 点一下大屏开启声音</div>
+        <!--
+          机器人举牌：assets/board/robot.png 是一张「牌面留空」的模板图，全场 19 个
+          环节共用；中英标题由代码实时写在牌面上，所以临场改环节名字
+          大屏跟着变，不用重新出图。牌面文字区的位置是 style.css 里的 4 个百分比
+          变量（--board-left/top/width/height），换图后微调这几个数即可对准。
+          模板缺失时整块退回下面这张纯文字卡，绝不留空。
+        -->
+        <div id="segment-card">
+          <img id="segment-board-art" src="/board/robot.png" alt="" hidden />
+          <!-- 牌面只放中英标题：时间 / 副标题 / 备注是流程表的内部信息，留在后台。 -->
+          <div class="seg-board-text">
+            <div class="seg-board-main">
+              <h2 id="segment-card-zh"></h2>
+              <div id="segment-card-en"></div>
+              <!-- 逐位颁奖：标题缩小让位，中间大字换成当前上台的得奖者 -->
+              <div id="segment-award">
+                <div id="segment-award-name"></div>
+                <div id="segment-award-org"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--
+        幸运抽奖（kind=lucky_draw）：和 /draw 独立页共用 apps/draw/presenter.ts，
+        只是把画面叠在大厅大屏上、不换页。标题栏与标语用 HUD 已有的，不重复搬。
+        必须放在 .seg-frame **外面** —— 那个框有 transform，会成为 position:fixed
+        子元素的包含块，抽奖画面会被压缩进那一小块里。
+      -->
+      <div id="draw-layer">
+        <div class="prize-card">
+          <div class="prize-level" id="prize-level"></div>
+          <img class="prize-img" id="prize-img" alt="" />
+          <div class="prize-name" id="prize-name">幸运抽奖</div>
+          <div class="prize-sponsor" id="prize-sponsor"></div>
+        </div>
+
+        <div class="reel-wrap">
+          <div class="reel-label">🎉 幸 运 之 星 🎉</div>
+          <div class="reel" id="reel">准备开始</div>
+        </div>
+
+        <div class="countdown" id="countdown"></div>
+
+        <div class="reveal" id="reveal">
+          <div class="reveal-inner">
+            <div class="reveal-congrats">🎉 恭 喜 中 奖 🎉</div>
+            <div class="reveal-name" id="reveal-name"></div>
+            <div class="reveal-prize" id="reveal-prize"></div>
+            <div class="reveal-sponsor" id="reveal-sponsor"></div>
+          </div>
+        </div>
+
+        <canvas id="confetti"></canvas>
+      </div>
+    </div>
+
     <div id="hud">
       <!-- outer glowing frame + corner brackets -->
       <div class="screen-frame">

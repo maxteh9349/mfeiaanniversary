@@ -7,7 +7,17 @@
 // implementation is code-split (dynamic import) so the local build never pulls
 // in supabase-js, and the supabase build never needs the local server running.
 
-import type { DrawEvent, Guest, Prize, SponsorLogo, Winner, WinnerStatus } from "../../shared/events.ts";
+import type {
+  DrawEvent,
+  Guest,
+  Honouree,
+  Prize,
+  Segment,
+  SponsorLogo,
+  StageState,
+  Winner,
+  WinnerStatus,
+} from "../../shared/events.ts";
 
 /** Body accepted by checkin() — same shape the local /api/checkin took. */
 export interface CheckinBody {
@@ -51,6 +61,38 @@ export interface DrawHandlers {
   onReturnToScreen?(): void;
   /** postgres_changes re-sync so a freshly-opened /draw reflects current prizes. */
   onPrizes?(prizes: Prize[]): void;
+}
+
+/** /stage callbacks. State changes are the operator's cues; segments/honourees re-sync on edit. */
+export interface StageHandlers {
+  /** Live segment + honouree cursor changed (or first load). */
+  onState(state: StageState, segment: Segment | null, honourees: Honouree[]): void;
+}
+
+/** Draft segment fields (id/created_at are server-managed). */
+export interface SegmentInput {
+  kind: Segment["kind"];
+  timeLabel?: string | null;
+  titleZh: string;
+  titleEn?: string | null;
+  subtitle?: string | null;
+  presenter?: string | null;
+  escort?: string | null;
+  note?: string | null;
+  autoScroll?: boolean;
+  /** 短片路径（`/video/xx.mp4` 或外部直链）；空 = 不放片。图片走 setSegmentImage。 */
+  videoUrl?: string | null;
+  sort?: number;
+  status?: Segment["status"];
+}
+
+/** Draft honouree fields (segmentId is passed separately on create). */
+export interface HonoureeInput {
+  groupLabel?: string | null;
+  nameZh: string;
+  nameEn?: string | null;
+  org?: string | null;
+  sort?: number;
 }
 
 export interface AuthSession {
@@ -110,6 +152,35 @@ export interface Backend {
   // realtime: presentation subscribes, operator broadcasts animation cues
   subscribeDraw(handlers: DrawHandlers): void;
   broadcastDraw(evt: DrawEvent): Promise<void>;
+
+  // ---- programme segments (/stage) ----
+  listSegments(): Promise<Segment[]>;
+  listHonourees(segmentId: number): Promise<Honouree[]>;
+  /** segmentId -> honouree count, for the console's rundown grid. */
+  honoureeCounts(): Promise<Map<number, number>>;
+  /** Tick a segment as played (stamped when it goes on the big screen). */
+  markSegmentAired(id: number): Promise<void>;
+  /** Clear every 「已播过」 tick — e.g. after a rehearsal. */
+  clearAiredMarks(): Promise<void>;
+  createSegment(input: SegmentInput): Promise<Segment>;
+  updateSegment(id: number, input: SegmentInput): Promise<void>;
+  /**
+   * Set (data: URL) or clear (null) the segment's big-screen image. Separate from
+   * updateSegment so the console can upload without re-submitting the whole form,
+   * and so "no new file" can never be mistaken for "remove the image".
+   */
+  setSegmentImage(id: number, imageDataUrl: string | null): Promise<void>;
+  deleteSegment(id: number): Promise<void>;
+  addHonouree(segmentId: number, input: HonoureeInput): Promise<Honouree>;
+  updateHonouree(id: number, input: HonoureeInput): Promise<void>;
+  deleteHonouree(id: number): Promise<void>;
+  /** Renumber a segment's honourees to the given order (console list reordering). */
+  reorderHonourees(segmentId: number, orderedIds: number[]): Promise<void>;
+  /** Current stage state; drives both /stage cold-load and the console's cursor. */
+  getStageState(): Promise<StageState>;
+  setStageState(state: StageState): Promise<void>;
+  /** /stage subscribes; every operator cue arrives as an onState call. */
+  subscribeStage(handlers: StageHandlers): void;
 
   // admin auth
   auth: AuthApi;

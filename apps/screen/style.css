@@ -153,6 +153,264 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
   50% { text-shadow: 0 0 9px #aef0ff, 0 0 18px #5fd0ff, 0 0 32px #38e1ff, 0 0 48px #2a6cff; }
 }
 
+/* ---- programme segment overlay (环节图片叠加在大厅画面上) ---- */
+/* Full-screen scrim so the 3D crowd recedes; the HUD keeps painting above it
+   because #hud follows this element in the DOM and neither sets a z-index. */
+#segment-overlay {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; opacity: 0; visibility: hidden;
+  transition: opacity 0.45s ease;
+  background: rgba(3, 7, 20, 0.82);
+}
+#segment-overlay.show { opacity: 1; visibility: visible; }
+
+/* Sized to clear the HUD chrome: title bar on top, counter/clock at the bottom. */
+.seg-frame {
+  position: relative; max-width: 74vw; max-height: 62vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 14px;
+  transform: translateY(1.5vh) scale(0.97);
+  opacity: 0; transition: transform 0.5s ease, opacity 0.5s ease;
+}
+#segment-overlay.show .seg-frame { transform: translateY(1.5vh) scale(1); opacity: 1; }
+/* Reuse the HUD's corner brackets, drawn just outside the picture. */
+.seg-frame > .corner { width: 30px; height: 30px; }
+.seg-frame > .corner.tl { top: 0; left: 0; }
+.seg-frame > .corner.tr { top: 0; right: 0; }
+.seg-frame > .corner.bl { bottom: 0; left: 0; }
+.seg-frame > .corner.br { bottom: 0; right: 0; }
+
+#segment-photo {
+  display: none; max-width: 100%; max-height: calc(62vh - 28px);
+  object-fit: contain;
+  border: 1px solid var(--border);
+  box-shadow: 0 0 40px rgba(42, 108, 255, 0.35), 0 0 90px rgba(3, 7, 20, 0.9);
+}
+#segment-overlay.has-photo #segment-photo { display: block; }
+
+/* ---- 环节短片 ---- */
+/* 放片时给得更大、底色压得更黑，画面全给视频。 */
+#segment-overlay.has-video { background: rgba(2, 4, 12, 0.94); }
+#segment-overlay.has-video .seg-frame { max-width: 88vw; max-height: 80vh; }
+#segment-video {
+  display: none; max-width: 100%; max-height: calc(80vh - 28px);
+  object-fit: contain; background: #000;
+  border: 1px solid var(--border);
+  box-shadow: 0 0 40px rgba(42, 108, 255, 0.35), 0 0 90px rgba(3, 7, 20, 0.9);
+}
+#segment-overlay.has-video #segment-video { display: block; }
+/* 浏览器不许带声自动播放时才出现；在大屏上点一下即可解锁，之后全场不再出现。 */
+#segment-sound-hint {
+  position: absolute; left: 50%; bottom: -34px; transform: translateX(-50%);
+  font-size: 15px; letter-spacing: 2px; color: var(--gold); white-space: nowrap;
+  padding: 5px 18px; border-radius: 999px;
+  background: rgba(4, 10, 28, 0.75); border: 1px solid rgba(255, 210, 102, 0.5);
+}
+
+/*
+  机器人举牌（没上传专属图片的环节都走这块，绝不留空）。
+  /board/robot.png 是牌面留空的模板；字由 main.ts 写进 .seg-board-text，
+  再用 4 个百分比变量摆到牌面上。换了模板图就调这 4 个数对准，不必动别的。
+  字号统一从 --art-h（图的实际显示高度）换算，所以缩放时版式比例不变；
+  全场共用同一个 --title-size，不按字数缩放 —— 换环节时框不动、只换字。
+*/
+#segment-card {
+  --art-h: min(58vh, 44vw);
+  --title-size: calc(var(--art-h) * 0.06);
+  --title-en-size: calc(var(--art-h) * 0.028);
+  --board-left: 11%;
+  --board-top: 15.5%;
+  --board-width: 45.5%;
+  --board-height: 62%;
+  display: none; position: relative;
+}
+#segment-overlay:not(.has-photo):not(.has-video):not(.has-draw) #segment-card { display: block; }
+/* 由 .has-board 决定显不显示 —— 不能只靠 hidden 属性：作者样式表里的 display
+   会盖过 UA 的 [hidden]{display:none}，模板图缺失时就会撑出一个空占位框。 */
+#segment-board-art { display: none; height: var(--art-h); width: auto; max-width: 74vw; }
+#segment-overlay.has-board #segment-board-art { display: block; }
+
+/* 有模板图时字浮在牌面上；缺图时这块退回一张普通文字卡。 */
+.seg-board-text { display: flex; flex-direction: column; }
+#segment-overlay.has-board .seg-board-text {
+  position: absolute;
+  left: var(--board-left); top: var(--board-top);
+  width: var(--board-width); height: var(--board-height);
+}
+#segment-overlay.has-board .seg-frame > .corner { display: none; } /* 牌子自带边框 */
+/* 宽高写死：换环节时外框纹丝不动，只有文字在变（用了模板图时尺寸就是图的尺寸）。 */
+#segment-overlay:not(.has-board) .seg-board-text {
+  width: 56vw; min-height: 24vh; padding: 42px 56px; justify-content: center;
+  background: linear-gradient(150deg, rgba(10, 22, 52, 0.9), rgba(5, 11, 30, 0.84));
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 40px rgba(42, 108, 255, 0.3), inset 0 0 70px rgba(42, 108, 255, 0.12);
+}
+
+/* 牌面正中：中英标题 */
+.seg-board-main {
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  text-align: center; min-height: 0;
+}
+/* 全场同一个字号，长标题靠换行而不是缩字；balance 让两行长度均匀。 */
+#segment-card-zh {
+  font-size: var(--title-size); font-weight: 900; letter-spacing: 3px; line-height: 1.28;
+  text-wrap: balance;
+  color: #fff; text-shadow: 0 0 18px rgba(56, 225, 255, 0.55), 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+/* 标题下那道渐隐光条 */
+#segment-card-zh::after {
+  content: ""; display: block; width: 46%; height: 2px; margin: 0.5em auto 0;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  box-shadow: 0 0 10px rgba(56, 225, 255, 0.7);
+}
+#segment-card-en {
+  font-size: var(--title-en-size); letter-spacing: 2px; line-height: 1.45;
+  text-wrap: balance; color: #cfe8ff; margin-top: 0.7em;
+}
+#segment-card-en:empty { display: none; }
+
+/* ---- 逐位颁奖：当前上台的得奖者 ---- */
+/* 环节标题退成小抬头，中间大字让给人名；英文标题这时收起来腾地方。 */
+#segment-award { display: none; }
+#segment-overlay.has-award #segment-award { display: block; }
+#segment-overlay.has-award #segment-card-en { display: none; }
+#segment-overlay.has-award #segment-card-zh {
+  font-size: calc(var(--title-size) * 0.78); letter-spacing: 3px;
+}
+#segment-overlay.has-award #segment-card-zh::after { margin-top: 0.5em; width: 34%; }
+
+#segment-award-name {
+  margin-top: 0.55em; font-size: calc(var(--title-size) * 1.32); font-weight: 900;
+  letter-spacing: 4px; line-height: 1.2; color: #fff; white-space: nowrap;
+  text-shadow: 0 0 22px rgba(255, 210, 102, 0.55), 0 0 46px rgba(56, 225, 255, 0.45);
+}
+#segment-award-org {
+  margin-top: 0.5em; font-size: calc(var(--title-size) * 0.38); color: #9fd6ff;
+}
+#segment-award-org:empty { display: none; }
+/* 换人才重播这个弹出，同环节的无关刷新不该让名字再跳一次 */
+#segment-award.enter { animation: seg-award-in 0.45s cubic-bezier(0.18, 1.3, 0.4, 1); }
+@keyframes seg-award-in {
+  0% { opacity: 0; transform: translateY(14px) scale(0.94); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ---- 幸运抽奖图层（kind=lucky_draw）---- */
+/* 从 apps/draw/style.css 移植，全部收在 #draw-layer 下；.tech-box/.title-box/.motto
+   不搬 —— 这一页本来就有，HUD 抽奖期间照常显示。 */
+/* absolute（不是 fixed）：#segment-overlay 本身就铺满视口，且没有 transform，
+   所以这里才量得到真正的整屏；.seg-frame 那层有 transform，绝不能把抽奖放进去。 */
+/* --draw-scale 是整块抽奖画面的唯一大小旋钮：所有字号 / 尺寸都乘它，改一个数
+   就整体放大缩小，版式比例不变。 */
+#draw-layer {
+  --draw-scale: 0.75;
+  /* 整块画面离屏幕顶端多远（避开标题栏 + 标语）。调大 = 整体往下移。 */
+  --draw-top: 27vh;
+  display: none; position: absolute; inset: 0; flex-direction: column; align-items: center;
+}
+#segment-overlay.has-draw #draw-layer { display: flex; }
+/* 抽奖时叠加层不压暗 3D 场景：奖品卡与滚动条自带底色，压暗只会让画面发闷。
+   那个带四角括号的图文框也收掉，抽奖用整屏。 */
+#segment-overlay.has-draw { background: transparent; }
+#segment-overlay.has-draw .seg-frame { display: none; }
+
+#draw-layer .prize-card {
+  margin-top: var(--draw-top); padding: 16px 40px; border-radius: 16px;
+  background: rgba(14, 28, 64, 0.55); border: 1px solid rgba(255, 210, 102, 0.4);
+  box-shadow: 0 0 40px rgba(255, 180, 60, 0.15);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+#draw-layer .prize-level {
+  font-size: calc(clamp(16px, 1.7vw, 24px) * var(--draw-scale));
+  color: #06122e; font-weight: 800;
+  background: linear-gradient(90deg, #ffd266, #ff9f43); padding: 4px 20px; border-radius: 999px;
+}
+#draw-layer .prize-img {
+  max-height: calc(15vh * var(--draw-scale)); max-width: 34vw;
+  border-radius: 10px; object-fit: contain;
+}
+#draw-layer .prize-name {
+  font-size: calc(clamp(30px, 3.8vw, 56px) * var(--draw-scale));
+  font-weight: 800; white-space: nowrap;
+}
+#draw-layer .prize-sponsor {
+  font-size: calc(clamp(14px, 1.4vw, 21px) * var(--draw-scale)); color: #9fd6ff;
+}
+#draw-layer .sp-label { font-size: 0.72em; letter-spacing: 4px; opacity: 0.7; margin-bottom: 1px; }
+#draw-layer .sp-name { font-weight: 700; }
+
+/* 上下 auto 会把滚动条居中在奖品卡下方的剩余空间里；底部留白比顶部小，
+   所以整块重心跟着 --draw-top 一起往下走，不会贴着画面正中。 */
+#draw-layer .reel-wrap {
+  margin-top: auto; margin-bottom: 6vh;
+  display: flex; flex-direction: column; align-items: center; gap: 2vh;
+}
+#draw-layer .reel-label {
+  font-size: calc(clamp(20px, 2.2vw, 34px) * var(--draw-scale));
+  letter-spacing: 10px; color: var(--gold);
+}
+#draw-layer .reel {
+  min-width: calc(46vw * var(--draw-scale));
+  padding: calc(3vh * var(--draw-scale)) calc(6vw * var(--draw-scale));
+  border-radius: 20px; text-align: center; white-space: nowrap;
+  font-size: calc(clamp(56px, 10vw, 170px) * var(--draw-scale));
+  font-weight: 900; line-height: 1.1;
+  background: rgba(8, 16, 38, 0.6); border: 2px solid rgba(56, 225, 255, 0.5);
+  box-shadow: inset 0 0 60px rgba(56, 225, 255, 0.12), 0 0 40px rgba(56, 225, 255, 0.2);
+  text-shadow: 0 0 24px rgba(56, 225, 255, 0.6); transition: color 0.2s;
+}
+#draw-layer .reel.locked {
+  color: var(--gold); border-color: var(--gold);
+  text-shadow: 0 0 30px rgba(255, 210, 102, 0.9);
+  animation: draw-pop 0.5s ease;
+}
+@keyframes draw-pop { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+
+#draw-layer .countdown {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-size: calc(clamp(80px, 18vw, 260px) * var(--draw-scale)); font-weight: 900; color: var(--cyan);
+  text-shadow: 0 0 50px rgba(56, 225, 255, 0.8);
+}
+#draw-layer .countdown.tick { animation: draw-cd 0.7s ease; }
+@keyframes draw-cd {
+  0% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+}
+
+#draw-layer .reveal {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at center, rgba(10, 30, 70, 0.7), rgba(4, 6, 15, 0.92));
+  opacity: 0; visibility: hidden; transition: opacity 0.4s;
+}
+#draw-layer .reveal.show { opacity: 1; visibility: visible; }
+#draw-layer .reveal-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 2vh;
+  transform: scale(0.7); transition: transform 0.5s cubic-bezier(0.18, 1.4, 0.4, 1);
+}
+#draw-layer .reveal.show .reveal-inner { transform: scale(1); }
+#draw-layer .reveal-congrats {
+  font-size: calc(clamp(26px, 3.4vw, 52px) * var(--draw-scale));
+  letter-spacing: 10px; color: var(--gold);
+}
+#draw-layer .reveal-name {
+  font-size: calc(clamp(64px, 13vw, 220px) * var(--draw-scale));
+  font-weight: 900; color: #fff; white-space: nowrap;
+  text-shadow: 0 0 40px rgba(255, 210, 102, 0.9), 0 0 80px rgba(56, 225, 255, 0.5);
+}
+#draw-layer .reveal-prize {
+  font-size: calc(clamp(26px, 3.4vw, 54px) * var(--draw-scale));
+  font-weight: 700; color: var(--cyan);
+}
+#draw-layer .reveal-sponsor {
+  font-size: calc(clamp(16px, 1.6vw, 26px) * var(--draw-scale)); color: #9fd6ff;
+}
+
+#draw-layer #confetti { position: fixed; inset: 0; }
+
 /* ---- hero reveal (welcome poster on check-in) ---- */
 #hero-reveal {
   position: absolute; inset: 0; z-index: 50;

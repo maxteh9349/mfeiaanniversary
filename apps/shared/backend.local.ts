@@ -80,6 +80,11 @@ function drawUnavailable(): never {
   throw new Error("lucky draw requires the Supabase backend");
 }
 
+/** The stage (programme segments) module is Supabase-only, same as the draw. */
+function stageUnavailable(): never {
+  throw new Error("programme segments require the Supabase backend");
+}
+
 const backend: Backend = {
   async searchGuests(q) {
     const res = await fetch(`/api/guests/search?q=${encodeURIComponent(q)}`);
@@ -178,6 +183,26 @@ const backend: Backend = {
   broadcastDraw: drawUnavailable,
   subscribeDraw() {
     /* no-op so a locally-served /draw page still mounts */
+  },
+
+  // ---- programme segments: Supabase-only, same stubbing as the draw above. ----
+  listSegments: stageUnavailable,
+  listHonourees: stageUnavailable,
+  honoureeCounts: stageUnavailable,
+  markSegmentAired: stageUnavailable,
+  clearAiredMarks: stageUnavailable,
+  createSegment: stageUnavailable,
+  updateSegment: stageUnavailable,
+  setSegmentImage: stageUnavailable,
+  deleteSegment: stageUnavailable,
+  addHonouree: stageUnavailable,
+  updateHonouree: stageUnavailable,
+  deleteHonouree: stageUnavailable,
+  reorderHonourees: stageUnavailable,
+  getStageState: stageUnavailable,
+  setStageState: stageUnavailable,
+  subscribeStage() {
+    /* no-op so a locally-served /stage page still mounts */
   },
 
   auth,

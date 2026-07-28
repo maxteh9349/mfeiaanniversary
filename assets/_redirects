@@ -4,4 +4,5 @@
 /screen    /apps/screen/index.html    200
 /admin     /apps/admin/index.html     200
 /draw      /apps/draw/index.html      200
+/stage     /apps/stage/index.html     200
 /          /apps/checkin/index.html   200

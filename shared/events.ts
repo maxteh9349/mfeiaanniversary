@@ -137,6 +137,94 @@ export type DrawEvent = DrawRollStart | DrawReveal | DrawReset | DrawReturnToScr
 /** Supabase Realtime broadcast channel name for the draw presentation. */
 export const DRAW_CHANNEL = "draw";
 
+// ---- programme segments (/stage) ------------------------------------------
+
+/** Big-screen layout used for a rundown segment. */
+export type SegmentKind =
+  | "title" // 过场标题卡（国歌、敬酒、晚宴完毕…）
+  | "speech" // 致辞：讲者姓名 + 职衔
+  | "roster" // 整屏名单（理事就职、长期服务奖分组）
+  | "award" // 逐位点名（结业证书、奖励金、支票、委任状）
+  | "sponsor_thanks" // 赞助商感谢状
+  // 幸运抽奖。不是一种排版：上台时 /screen 亮出抽奖图层（apps/draw/presenter.ts），
+  // 滚动 / 揭晓仍由运维台的抽奖控制台驱动。
+  | "lucky_draw";
+
+/** One item of the dinner rundown, rendered by /stage according to `kind`. */
+export interface Segment {
+  id: number;
+  kind: SegmentKind;
+  /** Time as printed in the rundown ("8.42pm"); shown as a corner label. */
+  timeLabel: string | null;
+  titleZh: string;
+  titleEn: string | null;
+  subtitle: string | null;
+  /** 颁发人 shown at the foot of award/roster layouts. */
+  presenter: string | null;
+  /** 陪同 — newline-separated when there are several. */
+  escort: string | null;
+  note: string | null;
+  /** roster only: scroll a list too long to fit instead of clipping it. */
+  autoScroll: boolean;
+  /**
+   * 环节大图，上台时叠在 /screen 大屏上（null = 未上传，大屏回退到标题文字卡）。
+   * /stage 的文字排版不使用它。
+   */
+  imageUrl: string | null;
+  /**
+   * 环节短片。上台即播，盖住整块大屏；播完停在最后一帧，等操作台切走。
+   * 存的是路径而不是上传的文件 —— 视频丢进 assets/video/ 就能用（`/video/xx.mp4`），
+   * 填外部直链也行。null = 这个环节不放片。
+   */
+  videoUrl: string | null;
+  sort: number;
+  status: "active" | "archived";
+  /** When this segment was last put on the big screen; null = not played yet. */
+  airedAt: number | null;
+}
+
+/** A person (or company) called up during a segment. */
+export interface Honouree {
+  id: number;
+  segmentId: number;
+  /** Roster group heading ("服务15年以上"); null = ungrouped. */
+  groupLabel: string | null;
+  nameZh: string;
+  nameEn: string | null;
+  /** 公司 / 学校 / 职衔. */
+  org: string | null;
+  sort: number;
+}
+
+/**
+ * What the big screen is showing right now. Persisted in `settings` (see
+ * 0006_stage.sql) so it doubles as the realtime cue and as recovery state for a
+ * screen reloaded mid-ceremony.
+ */
+export interface StageState {
+  /** False -> /stage hands the screen back to the /screen lobby. */
+  active: boolean;
+  segmentId: number | null;
+  /** 0-based honouree cursor for `award`; == honouree count shows the 合照 card. */
+  index: number;
+  /**
+   * 环节短片的音量 0–100（0 = 静音）。跟着 stage 状态一起走，所以运维台拉一下滑杆，
+   * 正在播的大屏立刻跟上；大屏中途刷新也会恢复成同一个音量。
+   */
+  volume: number;
+}
+
+/** 短片音量默认值：不设过就按满音量播。 */
+export const STAGE_VOLUME_DEFAULT = 100;
+
+/** settings keys holding StageState. */
+export const STAGE_KEYS = {
+  active: "stageActive",
+  segmentId: "stageSegmentId",
+  index: "stageIndex",
+  volume: "stageVolume",
+} as const;
+
 /** Honorifics shown AFTER the name (Chinese convention); all others go before. */
 const POSTFIX_TITLES = new Set(["先生", "女士", "小姐", "太太", "博士", "教授"]);
 

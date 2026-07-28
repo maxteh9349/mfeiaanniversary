@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MFEIA 49 周年 · 晚宴流程</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <div id="stage" data-kind="">
+      <!-- 只显示中英标题：时间 / 副标题 / 备注是流程表的内部信息，留在后台。 -->
+      <header class="stage-header">
+        <div class="tech-box title-box">
+          <div class="tech-inner">
+            <div class="stage-title" id="title-zh"></div>
+          </div>
+        </div>
+        <div class="stage-title-en" id="title-en"></div>
+      </header>
+
+      <!-- kind=speech — 致辞：讲者姓名 + 职衔 -->
+      <section class="pane pane-speech">
+        <div class="speech-label">致 辞</div>
+        <div class="speech-name" id="speech-name"></div>
+        <div class="speech-org" id="speech-org"></div>
+      </section>
+
+      <!-- kind=award — 逐位点名：当前一位 + 后续队列 -->
+      <section class="pane pane-award">
+        <div class="award-main">
+          <div class="award-counter" id="award-counter"></div>
+          <div class="award-name" id="award-name"></div>
+          <div class="award-en" id="award-en"></div>
+          <div class="award-org" id="award-org"></div>
+        </div>
+        <aside class="award-queue">
+          <div class="queue-title">后 续</div>
+          <ol id="award-queue"></ol>
+        </aside>
+      </section>
+
+      <!-- kind=roster — 整屏名单（可分组、可自动滚动） -->
+      <section class="pane pane-roster">
+        <div class="roster-viewport">
+          <div class="roster-track" id="roster"></div>
+        </div>
+      </section>
+
+      <!-- kind=sponsor_thanks — 赞助商感谢状 -->
+      <section class="pane pane-sponsor">
+        <div class="sponsor-plaques" id="sponsor-plaques"></div>
+      </section>
+
+      <footer class="stage-foot">
+        <div class="foot-item" id="foot-presenter"></div>
+        <div class="foot-item" id="foot-escort"></div>
+      </footer>
+    </div>
+
+    <div class="idle" id="idle">
+      <div class="idle-title">MFEIA 49 周年纪念晚宴</div>
+      <div class="idle-sub">等 待 环 节 开 始</div>
+    </div>
+
+    <div class="motto">团 结 · 专 业 · 创 新 · 共 赢</div>
+
+    <script type="module" src="./stage.ts"></script>
+  </body>
+</html>

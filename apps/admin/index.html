@@ -6,10 +6,66 @@
     <title>MFEIA 运维台</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
-  <body>
+  <body data-tab="live">
     <h1>MFEIA 49 周年 · 运维台</h1>
 
-    <section class="box">
+    <!--
+      两页：当晚只看「现场」，上面只有会按的东西；准备工作全在「布置」。
+      切换纯靠 body[data-tab] + CSS，所有板块照常初始化，id 一个没变。
+    -->
+    <nav class="tabs" id="tabs">
+      <button data-go="live" class="on">现场执行</button>
+      <button data-go="setup">赛前布置</button>
+    </nav>
+
+    <!-- ==================== 现场 ==================== -->
+
+    <section class="box stage-box" data-tab="live">
+      <h2>晚宴流程 · 环节控制台</h2>
+      <div class="row">
+        <button id="g-return">返回大厅大屏 ↩</button>
+        <button id="g-clear-aired" class="ghost">⟲ 一键恢复环节</button>
+        <span class="hint">点格子内的 ▶ 上台 才会切大屏</span>
+      </div>
+
+      <!-- 短片音量：写进 stage 状态，正在播的大屏实时跟随 -->
+      <div class="row vol-row">
+        <span class="seg-img-label">短片音量</span>
+        <button id="g-mute" class="ghost vol-btn" title="静音 / 恢复">🔊</button>
+        <input type="range" id="g-volume" min="0" max="100" step="5" value="100" />
+        <span id="g-volume-val" class="vol-val">100%</span>
+        <span class="hint">大屏页面开场前要点一下，浏览器才允许带声播放</span>
+      </div>
+
+      <!-- rundown grid: one tile per segment, click to select, ▶ 上台 to air -->
+      <div id="g-grid" class="seg-grid"></div>
+
+      <div class="row" style="margin-top: 12px">
+        <button id="g-prev" class="ghost">← 上一位</button>
+        <button id="g-next" class="stage-go">下一位 →</button>
+        <label>跳至第 <input type="number" id="g-jump" min="1" step="1" style="width: 70px" /> 位</label>
+        <button id="g-jump-go" class="ghost">跳转</button>
+        <span class="hint">键盘 ← / → 可直接翻名单</span>
+      </div>
+      <div id="g-cursor" class="cursor"></div>
+      <div id="g-msg" class="msg"></div>
+    </section>
+
+    <section class="box draw-box" id="draw-console" data-tab="live">
+      <h2>抽奖控制台</h2>
+      <div class="row">
+        <select id="d-prize" style="flex:1; min-width:220px"></select>
+        <button id="d-start" class="draw-go">开始 START</button>
+        <button id="d-stop" class="draw-stop">停止揭晓 STOP</button>
+        <button id="d-redraw">重抽 REDRAW</button>
+        <button id="d-reset" class="ghost">清屏</button>
+      </div>
+      <div id="d-msg" class="msg"></div>
+      <h2 style="margin: 18px 0 12px">中奖记录</h2>
+      <ul id="w-list" class="list"></ul>
+    </section>
+
+    <section class="box" data-tab="live">
       <h2>手动代签 / 新增嘉宾</h2>
       <div class="row">
         <input id="m-name" placeholder="姓名 *" />
@@ -24,27 +80,7 @@
       <div id="m-msg" class="msg"></div>
     </section>
 
-    <section class="box">
-      <h2>大屏标语</h2>
-      <div class="row">
-        <input id="t-slogan" placeholder="大屏标语文字" style="flex:1; min-width:260px" />
-        <button id="t-slogan-apply">应用</button>
-      </div>
-      <div id="t-msg" class="msg"></div>
-    </section>
-
-    <section class="box">
-      <h2>赞助商 Logo</h2>
-      <div class="row">
-        <input type="file" id="s-file" accept="image/*" />
-        <label>切换间隔(秒) <input type="number" id="s-interval" value="6" min="1" step="1" style="width:64px" /></label>
-        <button id="s-interval-apply">应用秒数</button>
-      </div>
-      <ul id="s-list" class="list"></ul>
-      <div id="s-msg" class="msg"></div>
-    </section>
-
-    <section class="box">
+    <section class="box" data-tab="live">
       <h2>已签到（点击可重新触发形象）<span id="total" class="total">0</span></h2>
       <label class="feed-row">
         <input type="checkbox" id="feed-toggle" checked />
@@ -56,13 +92,86 @@
       </label>
       <input id="search" placeholder="搜索姓名 / 公司…" />
       <ul id="list" class="list"></ul>
-      <div class="row" style="margin-top: 14px; justify-content: flex-end">
-        <button id="clear-all" class="danger">🗑 一键清除全部数据</button>
-      </div>
-      <div id="clear-msg" class="msg"></div>
     </section>
 
-    <section class="box draw-box">
+    <!-- ==================== 布置 ==================== -->
+
+    <section class="box stage-box" data-tab="setup" id="segment-editor">
+      <h2>环节 & 名单管理</h2>
+      <div class="row">
+        <select id="e-seg" style="flex: 1; min-width: 260px"></select>
+        <button id="e-new" class="ghost">＋ 新增环节</button>
+        <button id="e-del" class="danger">删除环节</button>
+      </div>
+
+      <div class="row" style="margin-top: 12px">
+        <select id="e-kind">
+          <option value="title">过场标题</option>
+          <option value="speech">致辞</option>
+          <option value="roster">整屏名单</option>
+          <option value="award">逐位颁奖</option>
+          <option value="sponsor_thanks">赞助商感谢状</option>
+          <option value="lucky_draw">幸运抽奖</option>
+        </select>
+        <input id="e-time" placeholder="时间 如 8.42pm" style="width: 140px" />
+        <input id="e-sort" type="number" step="1" placeholder="排序" style="width: 90px" />
+      </div>
+      <div class="row" style="margin-top: 10px">
+        <input id="e-title-zh" placeholder="中文标题 *" style="flex: 1; min-width: 240px" />
+        <input id="e-title-en" placeholder="英文标题" style="flex: 1; min-width: 240px" />
+      </div>
+
+      <!-- 短片：文件放进 assets/video/ 即可，这里只填路径（跟表单一起保存） -->
+      <div class="row seg-img-row" style="margin-top: 12px">
+        <span class="seg-img-label">环节短片</span>
+        <input id="e-video" placeholder="/video/sponsor.mp4（放进 assets/video/ 即可）"
+               style="flex: 1; min-width: 260px" />
+        <span class="hint">上台即播，播完停在最后一帧</span>
+      </div>
+
+      <!-- 上台时叠在大厅大屏上的图片；选好文件即刻上传，不必再点「保存环节」 -->
+      <div class="row seg-img-row" style="margin-top: 12px">
+        <span class="seg-img-label">环节大图（上台时叠在大厅大屏上）</span>
+        <input type="file" id="e-img" accept="image/*" />
+        <img id="e-img-thumb" class="seg-img-thumb" alt="" hidden />
+        <button id="e-img-del" class="ghost" hidden>移除图片</button>
+      </div>
+
+      <!--
+        大屏上不再显示的字段收在这里：副标题只在 /stage 致辞版式当讲者名兜底，
+        备注哪里都不显示，颁发人 / 陪同只在 /stage 页脚。数据列全部保留。
+      -->
+      <details class="more">
+        <summary>更多设置（副标题 · 颁发人 · 陪同 · 备注）</summary>
+        <div class="row" style="margin-top: 10px">
+          <input id="e-subtitle" placeholder="副标题" style="flex: 1; min-width: 200px" />
+          <input id="e-presenter" placeholder="颁发人（不必写「颁发：」）" style="flex: 1; min-width: 200px" />
+          <input id="e-escort" placeholder="陪同（多位用、分隔）" style="flex: 1; min-width: 200px" />
+        </div>
+        <div class="row" style="margin-top: 10px">
+          <input id="e-note" placeholder="备注（仅运维台可见）" style="flex: 1; min-width: 240px" />
+          <label><input type="checkbox" id="e-scroll" /> 名单过长时自动滚动</label>
+        </div>
+      </details>
+
+      <div class="row" style="margin-top: 12px">
+        <button id="e-save">保存环节</button>
+      </div>
+
+      <h2 style="margin: 18px 0 10px">名单 <span id="h-count" class="total">0</span></h2>
+      <div class="row">
+        <input id="h-zh" placeholder="姓名 / 公司 *" style="min-width: 160px" />
+        <input id="h-en" placeholder="英文名" style="min-width: 160px" />
+        <input id="h-org" placeholder="公司 / 学校 / 职衔" style="min-width: 160px" />
+        <input id="h-group" placeholder="分组标题 如 服务15年以上" style="min-width: 180px" />
+        <button id="h-save">添加</button>
+        <button id="h-cancel" class="ghost" hidden>取消编辑</button>
+      </div>
+      <ul id="h-list" class="list"></ul>
+      <div id="e-msg" class="msg"></div>
+    </section>
+
+    <section class="box draw-box" data-tab="setup">
       <h2>抽奖 · 奖品管理</h2>
       <div class="row">
         <input id="p-name" placeholder="奖品名称 *" />
@@ -81,20 +190,47 @@
       <div id="p-msg" class="msg"></div>
     </section>
 
-    <section class="box draw-box">
-      <h2>抽奖控制台</h2>
+    <section class="box" data-tab="setup">
+      <h2>赞助商 Logo</h2>
       <div class="row">
-        <select id="d-prize" style="flex:1; min-width:220px"></select>
-        <button id="d-start" class="draw-go">开始 START</button>
-        <button id="d-stop" class="draw-stop">停止揭晓 STOP</button>
-        <button id="d-redraw">重抽 REDRAW</button>
-        <button id="d-reset" class="ghost">清屏</button>
-        <button id="d-fullscreen" class="ghost">全屏展示 ↗</button>
-        <button id="d-return">返回大厅大屏 ↩</button>
+        <input type="file" id="s-file" accept="image/*" />
+        <label>切换间隔(秒) <input type="number" id="s-interval" value="6" min="1" step="1" style="width:64px" /></label>
+        <button id="s-interval-apply">应用秒数</button>
       </div>
-      <div id="d-msg" class="msg"></div>
-      <h2 style="margin: 18px 0 12px">中奖记录</h2>
-      <ul id="w-list" class="list"></ul>
+      <ul id="s-list" class="list"></ul>
+      <div id="s-msg" class="msg"></div>
+    </section>
+
+    <section class="box" data-tab="setup">
+      <h2>大屏标语</h2>
+      <div class="row">
+        <input id="t-slogan" placeholder="大屏标语文字" style="flex:1; min-width:260px" />
+        <button id="t-slogan-apply">应用</button>
+      </div>
+      <div id="t-msg" class="msg"></div>
+    </section>
+
+    <!-- 只在「另开一块屏单独放整页」或排练时才用得到，别占现场页 -->
+    <section class="box" data-tab="setup">
+      <h2>备用整页大屏 / 排练</h2>
+      <div class="row">
+        <button id="g-fullscreen" class="ghost">流程整页 /stage ↗</button>
+        <button id="d-fullscreen" class="ghost">抽奖整页 /draw ↗</button>
+        <button id="d-return" class="ghost">通知 /draw 返回大厅 ↩</button>
+      </div>
+      <div class="hint" style="margin-top: 10px">
+        大屏正常只需开 <b>/screen</b> 一个页面 —— 环节、短片、抽奖都叠在上面。
+        这里的整页版本是给「第二块屏」或排练用的。
+      </div>
+    </section>
+
+    <section class="box danger-zone" data-tab="setup">
+      <h2>危险区</h2>
+      <div class="row">
+        <button id="clear-all" class="danger">🗑 一键清除全部数据</button>
+        <span class="hint">清空签到名单、中奖记录、奖品与赞助商，不可撤销</span>
+      </div>
+      <div id="clear-msg" class="msg"></div>
     </section>
 
     <script type="module" src="./admin.ts"></script>
