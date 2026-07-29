@@ -12,3 +12,7 @@ data/*.csv
 
 .vercel
 supabase/.temp/
+
+# 116MB，超过 GitHub 与 Vercel 的 100MB 单文件上限：只在本机 dev server 伺服。
+# 要上线得先压到 100MB 以内，或改用外部直链（环节短片字段认完整 URL）。
+assets/video/Committee.mp4

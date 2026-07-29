@@ -400,16 +400,13 @@ void (async () => {
         meta.appendChild(img);
       }
       if (s.videoUrl) {
-        const vid = document.createElement("span");
-        vid.className = "seg-img-flag seg-vid-flag";
-        vid.textContent = "▶ 短片";
+        // 短片标记与静音键合成一个按钮：格子最窄只有 200 出头，多一个元素就会挤到断字。
+        const muted = stage.volume === 0;
+        const vid = document.createElement("button");
+        vid.className = "seg-img-flag seg-vid-flag seg-mute";
+        vid.textContent = muted ? "▶ 🔇" : "▶ 🔊";
+        vid.title = muted ? "短片 · 已静音，点击恢复声音" : "短片 · 点击静音（音量大小用上面的滑杆）";
         meta.appendChild(vid);
-        // 配了短片的格子直接给一个静音快捷键（音量大小用上面的滑杆）。
-        const mute = document.createElement("button");
-        mute.className = "seg-mute";
-        mute.textContent = stage.volume === 0 ? "🔇" : "🔊";
-        mute.title = stage.volume === 0 ? "点击恢复声音" : "点击静音";
-        meta.appendChild(mute);
       }
       tile.appendChild(meta);
 

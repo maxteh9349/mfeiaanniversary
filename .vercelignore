@@ -1,0 +1,15 @@
+# 只上传构建需要的东西。CLI 部署（vercel --prod）默认会把整个目录打包上去，
+# 根目录那些素材原片一进去就撞上 Vercel 单文件 100MB 上限，整个部署会失败。
+node_modules
+dist
+data
+supabase
+
+# 设计素材：靠后台上传到 Supabase Storage，不随站点部署
+design
+
+# 根目录的视频原片（剪辑素材）。要随站点上线的短片放 assets/video/，不受这条影响。
+/*.mp4
+
+# 116MB，超过 Vercel 单文件 100MB 上限 —— 带上它整个部署会失败。
+assets/video/Committee.mp4
