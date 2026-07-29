@@ -7,6 +7,7 @@
   --panel: rgba(8, 16, 38, 0.72);
   --border: rgba(56, 225, 255, 0.4);
   --c: 14px; /* chamfer size */
+  --hud-w: 210px; /* 四角卡片 + 左侧签到列表共用宽度 */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #05010e; }
@@ -50,30 +51,30 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .org-since { font-size: 9px; letter-spacing: 3px; color: var(--cyan); margin-top: 2px; }
 
 .hud-title-wrap { position: absolute; left: 50%; top: 26px; transform: translateX(-50%); text-align: center; }
-.welcome-zh { color: #cfe8ff; letter-spacing: 12px; font-size: 16px; margin-bottom: 6px; text-indent: 12px; }
-.title-box { display: inline-block; --c: 18px; }
-.title-box .tech-inner { padding: 10px 40px; }
+.welcome-zh { color: #cfe8ff; letter-spacing: 14px; font-size: 19px; margin-bottom: 7px; text-indent: 14px; }
+.title-box { display: inline-block; --c: 21px; }
+.title-box .tech-inner { padding: 12px 47px; }
 .title-box h1 {
-  font-size: 38px; font-weight: 900; letter-spacing: 2px; white-space: nowrap;
+  font-size: 45px; font-weight: 900; letter-spacing: 2px; white-space: nowrap;
   background: linear-gradient(180deg, #ffffff, #bfe6ff);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 .title-box h1 b { color: #fff; }
-.slogan { letter-spacing: 8px; color: #cfe8ff; font-size: 16px; margin-top: 8px; }
+.slogan { letter-spacing: 9px; color: #cfe8ff; font-size: 19px; margin-top: 9px; }
 
 .hud-corner { width: 27%; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; margin-top: 4px; }
 .hud-ai { font-size: 13px; letter-spacing: 2px; color: var(--cyan); }
 .smart-badge .tech-inner { padding: 12px 22px; font-size: 17px; font-weight: 700; letter-spacing: 3px; color: #fff; }
 
 /* ---- top-left: MFEIA logo card (mirrors the sponsor card size) ---- */
-.brand-card { position: absolute; top: 36px; left: 34px; width: 178px; }
-.brand-card .tech-inner { min-height: 134px; display: flex; align-items: center; justify-content: center; padding: 11px; }
-.brand-card .logo-cog { width: 104px; height: 104px; margin: 0; }
+.brand-card { position: absolute; top: 36px; left: 34px; width: var(--hud-w); }
+.brand-card .tech-inner { min-height: 158px; display: flex; align-items: center; justify-content: center; padding: 13px; }
+.brand-card .logo-cog { width: 123px; height: 123px; margin: 0; }
 
-/* ---- left: recent check-ins ---- */
-.hud-left { position: absolute; top: 190px; left: 34px; width: 178px; }
-.panel-inner { padding: 11px 13px; }
-.panel-title { color: #cfe8ff; font-size: 14px; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 7px; }
+/* ---- left: recent check-ins (top clears the brand card above) ---- */
+.hud-left { position: absolute; top: 216px; left: 34px; width: var(--hud-w); }
+.panel-inner { padding: 13px 15px; }
+.panel-title { color: #cfe8ff; font-size: 16px; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 7px; }
 .recent { list-style: none; }
 .recent-item {
   display: flex; align-items: center; gap: 9px; padding: 7px 2px;
@@ -93,21 +94,21 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .ri-time { font-size: 11px; color: var(--muted); align-self: center; }
 
 /* ---- right: counter + sponsor ---- */
-.hud-right { position: absolute; top: 36px; right: 34px; width: 178px; display: flex; flex-direction: column; gap: 14px; }
-.counter-card .tech-inner, .sponsor-card .tech-inner { padding: 11px; text-align: center; }
+.hud-right { position: absolute; top: 36px; right: 34px; width: var(--hud-w); display: flex; flex-direction: column; gap: 14px; }
+.counter-card .tech-inner, .sponsor-card .tech-inner { padding: 13px; text-align: center; }
 .counter-badge {
-  font-size: 15px; font-weight: 700; letter-spacing: 2px; color: #fff;
-  padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border);
+  font-size: 17px; font-weight: 700; letter-spacing: 2px; color: #fff;
+  padding-bottom: 9px; margin-bottom: 9px; border-bottom: 1px solid var(--border);
 }
-.counter-label, .sponsor-label { color: #cfe8ff; font-size: 12px; letter-spacing: 2px; }
-.counter-num { font-size: 46px; font-weight: 900; line-height: 1; margin: 4px 0; color: #fff; text-shadow: 0 0 18px rgba(56, 225, 255, 0.6); }
-.counter-unit { color: var(--muted); font-size: 12px; }
-.sponsor-logo { background: #fff; border-radius: 7px; margin-top: 8px; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; }
-.sponsor-img { max-width: 100%; max-height: 48px; object-fit: contain; transition: opacity 0.18s ease; }
+.counter-label, .sponsor-label { color: #cfe8ff; font-size: 14px; letter-spacing: 2px; }
+.counter-num { font-size: 54px; font-weight: 900; line-height: 1; margin: 4px 0; color: #fff; text-shadow: 0 0 18px rgba(56, 225, 255, 0.6); }
+.counter-unit { color: var(--muted); font-size: 14px; }
+.sponsor-logo { background: #fff; border-radius: 8px; margin-top: 9px; padding: 9px; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 50px; }
+.sponsor-img { max-width: 100%; max-height: 57px; object-fit: contain; transition: opacity 0.18s ease; }
 .sponsor-img.fade { opacity: 0; }
-.hex-mark { width: 26px; height: 26px; }
-.hex-text { color: #2a2a2a; font-size: 17px; font-weight: 800; letter-spacing: 1px; }
-.sponsor-sub { color: var(--muted); font-size: 12px; letter-spacing: 3px; margin-top: 8px; }
+.hex-mark { width: 31px; height: 31px; }
+.hex-text { color: #2a2a2a; font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+.sponsor-sub { color: var(--muted); font-size: 14px; letter-spacing: 3px; margin-top: 9px; }
 
 /* ---- bottom: flow + hint + clock ---- */
 .hud-bottom {
@@ -123,24 +124,23 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .step-icon { width: 38px; height: 38px; flex: none; }
 .flow-arrow { color: #4f9be8; font-size: 26px; font-weight: 700; }
 
-.bottom-left { position: absolute; left: 34px; bottom: 26px; width: 178px; }
+.bottom-left { position: absolute; left: 34px; bottom: 26px; width: var(--hud-w); }
 .bottom-left .counter-card { width: 100%; }
-.bottom-right { position: absolute; right: 34px; bottom: 26px; width: 178px; }
+.bottom-right { position: absolute; right: 34px; bottom: 26px; width: var(--hud-w); }
 .bottom-right .clock { width: 100%; }
 .hint-box {
   align-self: center; display: flex; align-items: center; gap: 10px; max-width: 250px;
   font-size: 12px; line-height: 1.55; color: var(--gold);
 }
 .hint-smile { font-size: 28px; color: var(--gold); }
-.clock { --c: 12px; }
-.clock .tech-inner { padding: 10px 18px; text-align: center; }
+.clock .tech-inner { padding: 12px 20px; text-align: center; }
 .clock-badge {
-  font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--cyan);
-  white-space: nowrap; padding-bottom: 7px; margin-bottom: 7px;
+  font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--cyan);
+  white-space: nowrap; padding-bottom: 8px; margin-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
-.clock-time { font-size: 28px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; }
-.clock-date { font-size: 13px; color: var(--muted); letter-spacing: 2px; margin-top: 2px; }
+.clock-time { font-size: 33px; font-weight: 800; color: var(--cyan); letter-spacing: 1px; }
+.clock-date { font-size: 15px; color: var(--muted); letter-spacing: 2px; margin-top: 2px; }
 
 .motto {
   position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
