@@ -79,7 +79,7 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .hud-ai { font-size: 13px; letter-spacing: 2px; color: var(--cyan); }
 .smart-badge .tech-inner { padding: 12px 22px; font-size: 17px; font-weight: 700; letter-spacing: 3px; color: #fff; }
 
-/* ---- top-left: MFEIA logo —— 只有标志本身，不套边框卡（与 /stage 一致）---- */
+/* ---- top-left: MFEIA logo —— 只有标志本身，不套边框卡 ---- */
 .brand-logo {
   /* 比左侧那一列（签到列表 / 签到人数卡，都是 left: 34px）往右让一点 —— 去掉边框卡
      之后 logo 贴着屏幕边缘显得局促，也压着外框的左上角括号。 */
@@ -219,6 +219,11 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
   background: rgba(3, 7, 20, 0.82);
 }
 #segment-overlay.show { opacity: 1; visibility: visible; }
+/* 流程版式（致辞 / 逐位颁奖 / 整屏名单 / 赞助商感谢状）底色压深一档：致辞照片的四边是靠
+   蒙版化成**真透明**融进背景的，背后越干净越像样 —— 0.82 下 3D 底纹那圈圆环会跟照片抢。
+   顺带四块版式的文字也更跳。整张环节大图（.has-photo）与短片（.has-video）各有自己的
+   底色规则，不受这条影响。 */
+#segment-overlay.has-stage { background: rgba(3, 7, 20, 0.93); }
 
 /* Sized to clear the HUD chrome: title bar on top, counter/clock at the bottom. */
 .seg-frame {
@@ -236,26 +241,40 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .seg-frame > .corner.bl { bottom: 0; left: 0; }
 .seg-frame > .corner.br { bottom: 0; right: 0; }
 
-/* 配图环节 HUD 会淡出（见文件末尾那条），所以照片可以给到接近整屏 ——
-   62vh 是当年要给顶部标题栏和四角卡片让位才收着的，现在不用让了。 */
-#segment-overlay.has-photo .seg-frame { max-width: 92vw; max-height: 88vh; }
+/* 配图环节（整张环节大图 / 幻灯片的每一页）HUD 会淡出（见文件末尾那条），所以图可以
+   给到接近整屏 —— 62vh 是当年要给顶部标题栏和四角卡片让位才收着的，现在不用让了。
+   但**左上 MFEIA logo 与右上赞助商卡是不淡出的**（品牌全场在线），给到 92vw/88vh 时
+   16:9 的图两个上角正好压到它们身上，所以收回一档：92vw/88vh → 86vw/80vh。
+   要再收就改 --seg-photo-h 这一个数（图是 16:9，高度才是真正卡住画面的那个数；
+   宽度那条留了余量，够不着）。 */
+#segment-overlay.has-photo { --seg-photo-h: 80vh; }
+#segment-overlay.has-photo .seg-frame { max-width: 86vw; max-height: var(--seg-photo-h); }
 #segment-photo {
-  display: none; max-width: 100%; max-height: calc(88vh - 28px);
+  display: none; max-width: 100%; max-height: calc(var(--seg-photo-h, 88vh) - 28px);
   object-fit: contain;
   border: 1px solid var(--border);
   box-shadow: 0 0 40px rgba(42, 108, 255, 0.35), 0 0 90px rgba(3, 7, 20, 0.9);
 }
 #segment-overlay.has-photo #segment-photo { display: block; }
 
-/* ---- 环节短片 ---- */
-/* 放片时给得更大、底色压得更黑，画面全给视频。 */
-#segment-overlay.has-video { background: rgba(2, 4, 12, 0.94); }
-#segment-overlay.has-video .seg-frame { max-width: 88vw; max-height: 80vh; }
+/* ---- 环节短片：整屏播 ---- */
+/* 赞助商短片要的就是**满屏**，所以放片时这一层退化成一块纯黑幕布：外框撑满视口、
+   内边距归零、四角括号收起、视频本身也不留边框与外发光 —— 那些装饰在「一张图配个框」
+   时好看，铺满整屏时只会在边缘留一圈线。
+   入场动画只保留缩放，去掉 .seg-frame 那 1.5vh 的下移（满屏时它会在顶端露出一条缝）。
+   object-fit: contain 而不是 cover：宁可在非 16:9 的投影上留一点黑边，也不能把赞助商
+   片子的 logo / 字幕裁掉。片源与大屏都是 16:9 时正好铺满，一点边都不留。 */
+#segment-overlay.has-video { background: #000; }
+#segment-overlay.has-video .seg-frame {
+  max-width: 100vw; max-height: 100vh; width: 100vw; height: 100vh;
+  padding: 0;
+  transform: scale(0.97);
+}
+#segment-overlay.has-video.show .seg-frame { transform: scale(1); }
+#segment-overlay.has-video .seg-frame > .corner { display: none; }
 #segment-video {
-  display: none; max-width: 100%; max-height: calc(80vh - 28px);
+  display: none; width: 100%; height: 100%; max-width: 100vw; max-height: 100vh;
   object-fit: contain; background: #000;
-  border: 1px solid var(--border);
-  box-shadow: 0 0 40px rgba(42, 108, 255, 0.35), 0 0 90px rgba(3, 7, 20, 0.9);
 }
 #segment-overlay.has-video #segment-video { display: block; }
 
@@ -323,11 +342,11 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 #segment-card-en:empty { display: none; }
 
 /* ---- 晚宴流程版式图层（致辞 / 逐位颁奖 / 整屏名单 / 赞助商感谢状）---- */
-/* 版式本身在 apps/stage/panes.css，由 apps/stage/presenter.ts import —— 与 /stage
-   整页共用同一份，改版式请改那里，这里只负责这块画面摆在屏幕的哪个位置、多大。
+/* 版式本身在 apps/screen/segments/panes.css，由同目录的 presenter.ts import ——
+   改字号 / 版位请改那里，这里只负责这块画面摆在屏幕的哪个位置、多大。
    absolute（不是 fixed）且必须在 .seg-frame 外面，理由同下面的抽奖图层。 */
 #stage-layer {
-  /* 环节上台时 HUD 会淡出（见下），所以这块和 /stage 整页一样用满整屏，
+  /* 环节上台时 HUD 会淡出（见下），所以这块用满整屏，
      --pane-scale 取 1（不再需要为四角卡片收一档）。 */
   --pane-scale: 1;
   display: none; position: absolute;
@@ -338,7 +357,7 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 /* 举牌卡与它的四角括号让位给版式 */
 #segment-overlay.has-stage .seg-frame { display: none; }
 /* 标题带与 logo 等高、同一条顶线（top 都是 36px）→ 面板从 logo 底边下方开始，
-   名字不会跑到 logo 底下。与 /stage 靠 --logo-size 对齐是同一招。 */
+   名字不会跑到 logo 底下。 */
 #stage-layer .title-band { min-height: var(--brand-logo-size); }
 /* 标题带是居中的，但两个上角都占着位置（左：MFEIA logo，右：赞助商 —— 环节期间
    两者都不淡出）。超长环节名（「颁发 2025/26 假期工业之旅结业证书」那种）横过来
@@ -347,10 +366,15 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
    只收标题带，不收 #stage-layer 本身 —— 整屏名单还要用满宽度。 */
 #stage-layer .stage-header {
   max-width: calc(100vw - 2 * (34px + var(--hud-w) + 20px));
+  /* 标题带整组（中文标题框 + 英文副标题 +「致 辞」）往上提。用 transform 而不是改
+     #stage-layer 的 top / 加负 margin —— 那两种都会把下面的姓名、照片、名单一起带上去，
+     而那几块是单独调过位置的（照片有 --speech-photo-rise，面板有 --pane-top）。
+     transform 只挪画面不动布局，标题上去了，底下的版式一动不动。想再高只改这一个数。 */
+  --title-rise: 26px;
+  transform: translateY(calc(-1 * var(--title-rise)));
 }
 
-/* 环节上台 = 让出整块屏幕：HUD 淡出，只留左上 logo 与外框（/stage 整页也是这个
-   样子，两块屏观感一致，品牌也全场在线）。
+/* 环节上台 = 让出整块屏幕：HUD 淡出，只留左上 logo 与外框（品牌全场在线）。
    流程版式 / 配图 / 短片三种都淡出 —— 它们各自要占大半个屏，留着 HUD 就会互相压字。
    **抽奖（has-draw）故意不在名单里**：抽奖图层本来就是靠 HUD 已有的标题栏与标语撑场，
    搬进来会重复，见上面 #draw-layer 那段注释。
@@ -360,12 +384,17 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
    style.display，碰 display 会打架；opacity 与它正交，关掉的照样保持关闭。 */
 .hud-title-wrap, .hud-left, .hud-bottom,
 .bottom-left, .bottom-right, .motto { transition: opacity 0.45s ease; }
-/* .hud-right（赞助商 logo）**不在**淡出名单里 —— 赞助商要全场在屏，和左上 MFEIA logo
-   一样，环节期间照常显示。 */
+/* .hud-right（赞助商 logo）**不在**上面那条淡出名单里 —— 赞助商要全场在屏，和左上
+   MFEIA logo 一样，环节期间照常显示。**只有满屏放片时例外**（见下面 has-video 那条）。 */
 #segment-overlay:is(.has-stage, .has-photo, .has-video) ~ #hud
   :is(.hud-title-wrap, .hud-left, .hud-bottom, .bottom-left, .bottom-right, .motto) {
   opacity: 0;
 }
+/* 满屏放片时连右上赞助商卡与左上 MFEIA logo 也淡出：片子已经铺满整屏，上面再压一个
+   别家赞助商的 logo 最难看，MFEIA 标志也会挡住片子四角的字。片放完切走即刻恢复。
+   只针对 has-video —— 别的环节（版式 / 配图）照旧留着这两块，品牌全场在线。 */
+.brand-logo, .hud-right { transition: opacity 0.45s ease; }
+#segment-overlay.has-video ~ #hud :is(.brand-logo, .hud-right) { opacity: 0; }
 
 /* ---- 幸运抽奖图层（kind=lucky_draw）---- */
 /* 从 apps/draw/style.css 移植，全部收在 #draw-layer 下；.tech-box/.title-box/.motto

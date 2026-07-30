@@ -16,3 +16,13 @@ supabase/.temp/
 # 116MB，超过 GitHub 与 Vercel 的 100MB 单文件上限：只在本机 dev server 伺服。
 # 要上线得先压到 100MB 以内，或改用外部直链（环节短片字段认完整 URL）。
 assets/video/Committee.mp4
+
+# 源素材（只在本机留着，不进仓库）：出图 / 出片的原始文件，体积大且运行时用不到 ——
+# 大屏读的是 assets/ 下压好的成品（speaker / committee / slides / video）。
+# Photo/ 一个就有 197MB，远超 GitHub 与 Vercel 的限制。
+Photo/
+会长致辞PPT/
+Lucky Draw/
+Sponsor/
+*.xlsx
+/*.mp4

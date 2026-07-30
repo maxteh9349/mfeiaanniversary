@@ -137,7 +137,7 @@ export type DrawEvent = DrawRollStart | DrawReveal | DrawReset | DrawReturnToScr
 /** Supabase Realtime broadcast channel name for the draw presentation. */
 export const DRAW_CHANNEL = "draw";
 
-// ---- programme segments (/stage) ------------------------------------------
+// ---- programme segments (overlaid on /screen) ------------------------------
 
 /** Big-screen layout used for a rundown segment. */
 export type SegmentKind =
@@ -145,12 +145,16 @@ export type SegmentKind =
   | "speech" // 致辞：讲者姓名 + 职衔
   | "roster" // 整屏名单（理事就职、长期服务奖分组）
   | "award" // 逐位点名（结业证书、奖励金、支票、委任状）
+  // 幻灯片：一页一张整屏图，用与逐位颁奖同一套游标（上一位 / 下一位 / ← → /
+  // 跳转 / 自动播放）手动翻页。每一页存成这个环节的一条 honourees 记录，图放在
+  // photo_url —— 于是名单编辑器的增删改与调序天然就是幻灯片的页面管理。
+  | "slides"
   | "sponsor_thanks" // 赞助商感谢状
   // 幸运抽奖。不是一种排版：上台时 /screen 亮出抽奖图层（apps/draw/presenter.ts），
   // 滚动 / 揭晓仍由运维台的抽奖控制台驱动。
   | "lucky_draw";
 
-/** One item of the dinner rundown, rendered by /stage according to `kind`. */
+/** One item of the dinner rundown; `kind` picks the big screen's layout for it. */
 export interface Segment {
   id: number;
   kind: SegmentKind;
@@ -168,7 +172,7 @@ export interface Segment {
   autoScroll: boolean;
   /**
    * 环节大图，上台时叠在 /screen 大屏上（null = 未上传，大屏回退到标题文字卡）。
-   * /stage 的文字排版不使用它。
+   * 走文字版式的环节（speech / roster / award / sponsor_thanks）不使用它。
    */
   imageUrl: string | null;
   /**
@@ -194,6 +198,12 @@ export interface Honouree {
   /** 公司 / 学校 / 职衔. */
   org: string | null;
   /**
+   * 职衔 / 任期（「第五任会长」），逐位颁奖版式里写在姓名**下方**、英文名上方。
+   * 与 `org`（公司 / 学校）分开：同一位可以既属某公司、又是本会第几任会长，两行都要上屏。
+   * null = 不显示这一行（大多数人）；整屏名单版式不读它。
+   */
+  roleLabel: string | null;
+  /**
    * 人物肖像（存 `uploads` 桶，见 0011_honouree_photo.sql）。目前只有致辞版式会读它，
    * 与姓名 / 职衔并排显示；null = 没上传，版式退回纯文字。
    */
@@ -207,7 +217,7 @@ export interface Honouree {
  * screen reloaded mid-ceremony.
  */
 export interface StageState {
-  /** False -> /stage hands the screen back to the /screen lobby. */
+  /** False -> /screen fades the segment overlay out, back to the 3D lobby. */
   active: boolean;
   segmentId: number | null;
   /** 0-based honouree cursor for `award`; == honouree count shows the 合照 card. */
@@ -217,10 +227,19 @@ export interface StageState {
    * 正在播的大屏立刻跟上；大屏中途刷新也会恢复成同一个音量。
    */
   volume: number;
+  /**
+   * 逐位颁奖「自动播放」的间隔秒数。**只是个设定值**：真正的计时器跑在运维台页面里
+   * （见 apps/admin/admin.ts），大屏不看这个字段。存进 stage 状态是为了刷新 / 换机器
+   * 之后还是同一个节奏，理由与 volume 相同。
+   */
+  autoSec: number;
 }
 
 /** 短片音量默认值：不设过就按满音量播。 */
 export const STAGE_VOLUME_DEFAULT = 100;
+
+/** 自动播放的默认间隔：一位大约看清照片 + 姓名的时间。 */
+export const STAGE_AUTO_SEC_DEFAULT = 6;
 
 /** settings keys holding StageState. */
 export const STAGE_KEYS = {
@@ -228,6 +247,7 @@ export const STAGE_KEYS = {
   segmentId: "stageSegmentId",
   index: "stageIndex",
   volume: "stageVolume",
+  autoSec: "stageAutoSec",
 } as const;
 
 /** Honorifics shown AFTER the name (Chinese convention); all others go before. */

@@ -8,7 +8,6 @@
     { "source": "/screen", "destination": "/apps/screen/index.html" },
     { "source": "/admin", "destination": "/apps/admin/index.html" },
     { "source": "/draw", "destination": "/apps/draw/index.html" },
-    { "source": "/stage", "destination": "/apps/stage/index.html" },
     { "source": "/", "destination": "/apps/checkin/index.html" }
   ]
 }

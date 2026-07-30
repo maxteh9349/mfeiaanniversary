@@ -6,7 +6,7 @@ import { Portal } from "./portal/portal.ts";
 import { Director } from "./behavior/director.ts";
 import { PosterReveal } from "./avatar/posterReveal.ts";
 import { mountDrawPresenter } from "../draw/presenter.ts";
-import { mountStagePresenter, STAGE_KINDS } from "../stage/presenter.ts";
+import { mountStagePresenter, STAGE_KINDS } from "./segments/presenter.ts";
 import type { Guest, Honouree, Segment, StageState } from "../../shared/events.ts";
 import { STAGE_VOLUME_DEFAULT } from "../../shared/events.ts";
 
@@ -35,8 +35,8 @@ function applyPrefill(crowd: Guest[]): void {
 world.start();
 
 // ---- programme segments -----------------------------------------------------
-// 「上台」不再把投影切到 /stage：这块大屏保持原样，只在上面叠一张环节图片，3D 场景
-// 压暗、HUD 照常显示。没上传图片的环节退回标题文字卡，免得操作台点了却看不出变化。
+// 「上台」不换页：这块大屏保持原样，只在上面叠一张环节图片，3D 场景压暗、HUD 照常
+// 显示。没上传图片的环节退回标题文字卡，免得操作台点了却看不出变化。
 const segmentOverlay = document.getElementById("segment-overlay") as HTMLElement;
 const segmentPhoto = document.getElementById("segment-photo") as HTMLImageElement;
 /** True while a segment owns the screen — mutes the check-in welcome poster. */
@@ -109,9 +109,9 @@ const drawPresenter = mountDrawPresenter(document.getElementById("draw-layer") a
   isActive: () => segmentOverlay.classList.contains("has-draw"),
 });
 
-// 致辞 / 逐位颁奖 / 整屏名单 / 赞助商感谢状：与 /stage 整页共用同一个 presenter 和
-// 同一份 panes.css，所以两块屏的版式不会走样。上台即在这块大屏原地弹出，不换页、
-// 不重载 3D。名单本来就随每次指令一起推过来（subscribeStage 总是带 honourees）。
+// 致辞 / 逐位颁奖 / 整屏名单 / 赞助商感谢状：版式在 ./segments/（presenter.ts + panes.css）。
+// 上台即在这块大屏原地弹出，不换页、不重载 3D。名单本来就随每次指令一起推过来
+// （subscribeStage 总是带 honourees）。
 const stagePresenter = mountStagePresenter(document.getElementById("stage-layer") as HTMLElement);
 
 /** 正在放的那条片子（环节 id + 路径），免得同环节的其它指令把片子从头重播。 */
@@ -159,7 +159,11 @@ function showSegment(state: StageState, segment: Segment | null, honourees: Hono
     stopSegmentVideo();
   }
 
-  const url = segment.imageUrl ?? "";
+  // 幻灯片环节：整屏图来自**当前这一页**（honourees[index] 的 photo_url），走的是与
+  // 环节大图完全相同的那条显示路径，所以过场动画、HUD 淡出、底色全都一模一样。
+  // 翻页 = 运维台的「下一位 / 上一位」写 stage.index，这里跟着换 src。
+  const url =
+    segment.kind === "slides" ? (honourees[state.index]?.photoUrl ?? "") : (segment.imageUrl ?? "");
   segmentOverlay.classList.toggle("has-photo", !!url);
   // Only touch src on a real change: an unrelated cue (下一位) must not reload the
   // picture and flash the screen mid-ceremony.

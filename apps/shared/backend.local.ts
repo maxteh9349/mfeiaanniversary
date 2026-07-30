@@ -203,7 +203,7 @@ const backend: Backend = {
   getStageState: stageUnavailable,
   setStageState: stageUnavailable,
   subscribeStage() {
-    /* no-op so a locally-served /stage page still mounts */
+    /* no-op so /screen still mounts against the local backend */
   },
 
   auth,

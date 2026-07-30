@@ -11,7 +11,7 @@
 
     <!--
       流程环节叠加层：操作台点「上台」时，把该环节的图片盖在大厅画面上（3D 场景
-      压暗、HUD 照常显示），不再把投影切到 /stage。没上传图片的环节退回标题文字卡。
+      压暗、HUD 照常显示），投影全程不换页。没上传图片的环节退回标题文字卡。
       放在 #hud 之前，所以压暗只作用于 3D 场景，HUD 仍浮在最上层。
     -->
     <div id="segment-overlay">
@@ -41,8 +41,8 @@
       </div>
 
       <!--
-        晚宴流程环节版式（致辞 / 逐位颁奖 / 整屏名单 / 赞助商感谢状）：与 /stage 整页
-        共用 apps/stage/presenter.ts + panes.css，内容由它建，这里只留一个空容器。
+        晚宴流程环节版式（致辞 / 逐位颁奖 / 整屏名单 / 赞助商感谢状）：DOM 全部由
+        apps/screen/segments/presenter.ts 建（版式在同目录 panes.css），这里只留空容器。
         和抽奖图层同理，必须放在 .seg-frame **外面** —— 那个框有 transform，会成为
         子元素的包含块，整屏名单会被压进那一小块里。
       -->
@@ -89,7 +89,7 @@
         <i class="corner bl"></i><i class="corner br"></i>
       </div>
 
-      <!-- 左上角 MFEIA logo：只留标志本身，不套边框卡（与 /stage 一致）。 -->
+      <!-- 左上角 MFEIA logo：只留标志本身，不套边框卡。 -->
       <img class="brand-logo" id="brand-logo" alt="MFEIA" />
 
       <header class="hud-top">

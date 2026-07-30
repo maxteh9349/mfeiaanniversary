@@ -1,0 +1,250 @@
+/* 晚宴流程环节的版式 —— 由同目录的 presenter.ts import，只有 /screen 的环节叠加层
+   （#stage-layer）在用。曾经的 /stage 整页大屏已经删掉，版式规则全在这一份里。
+
+   --pane-scale 是整套版式的唯一大小旋钮：所有字号都乘它，改一个数就整体放大缩小、
+   版式比例不变（和 #draw-layer 的 --draw-scale 同一套思路）。#stage-layer 取 1。
+
+   容器几何（这块画面摆在屏幕哪里、多大）由 apps/screen/style.css 负责，不在这里。 */
+
+/* ---- 标题带：中文标题框 + 英文副标题，整组底对齐 ---- */
+.stage-header { display: flex; flex-direction: column; align-items: center; flex: none; }
+.title-band { display: flex; align-items: flex-end; }
+.title-stack { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.title-box { display: inline-block; --c: 18px; filter: drop-shadow(0 6px 22px rgba(42, 108, 255, 0.4)); max-width: 92vw; }
+.title-box .tech-inner { padding: 12px clamp(20px, 3vw, 54px); }
+.stage-title {
+  /* 一路降到 2.5vw / 38px（历经 4.2/68 -> 3.5/56 -> 3/46 -> 2.5/38）：最长的那条
+     「颁发 2025/26 假期工业之旅结业证书」在 /screen 上要挤进「整屏减去左右两个 logo
+     宽度」的标题带里，字大了就换行。38px 下它单行放得开。 */
+  font-size: calc(clamp(17px, 2.5vw, 38px) * var(--pane-scale, 1));
+  letter-spacing: 2px; font-weight: 900; line-height: 1.25;
+  background: linear-gradient(180deg, #ffffff, #bfe6ff);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.stage-title-en {
+  font-size: calc(clamp(15px, 1.75vw, 26px) * var(--pane-scale, 1));
+  color: #7fc6ff; letter-spacing: 1px; max-width: 88vw;
+}
+.stage-title-en:empty { display: none; }
+
+/* ---- panes: one per segment kind, switched by the container's data-kind ---- */
+.pane { display: none; width: 100%; flex: 1; min-height: 0; }
+[data-kind="speech"] > .pane-speech,
+[data-kind="award"] > .pane-award,
+[data-kind="roster"] > .pane-roster,
+[data-kind="sponsor_thanks"] > .pane-sponsor { display: flex; }
+
+/* ---- speech ----
+   有照片：照片在左、文字在右；没照片：整块退回原来的纯文字居中版式（.speech-photo
+   收起，.speech-text 自己居中），所以没传照片的讲者显示效果与加这个功能之前一致。 */
+/* 致辞与逐位颁奖共用一套纵向定位：靠上排而不是垂直居中 —— 面板从标题带一直延伸到
+   屏幕底部，居中会把姓名压到偏下半屏。--pane-top 是这两块离标题带多远的唯一旋钮，
+   改一个数两种环节一起动，现场看着才是同一个版式。 */
+.pane-speech, .pane-award {
+  --pane-top: 5vh;
+  align-items: flex-start; justify-content: center;
+  padding-top: var(--pane-top);
+  gap: clamp(24px, 4vw, 72px);
+  /* 照片边缘往外化开的蒙版 —— 两层取交集：竖向那层管上下，横向那层管左右。
+     数值是照 Photo/ 那批棚拍图量的（2630×3946，头顶在 9% 处，人体边缘 13%~86%）：
+       6%      顶边只收一点，收的是头顶以上的灰底，削不到头发；
+       56%     底边从这里开始化掉 —— 腰部以下直接溶进背景，观感就是头肩特写。
+               **这是真正把画面收紧的那一条**，比 aspect-ratio 的裁切管用得多，
+               而且不用裁到脸附近，取景不同的照片也不会被裁坏；
+       14/86%  只溶掉肩膀最外侧。
+     想更紧/更松就改这三组数，别去动 aspect-ratio。 */
+  --speech-photo-mask:
+    linear-gradient(180deg, transparent 0, #000 6%, #000 56%, transparent 100%),
+    linear-gradient(90deg, transparent 0, #000 14%, #000 86%, transparent 100%);
+  /* 照片往上提多少（只提照片，姓名那栏不动）。--pane-top 是 5vh 且两种环节共用，
+     不能拿它来提 —— 一改文字也会跟着上移。提上去不怕压到标题带：顶边 6% 本来
+     就是化开的，没有硬边线。想再高改这一个数。 */
+  --speech-photo-rise: 18vh;
+  /* 照片大小。致辞是整场只此一位，给得大；逐位颁奖下面单独调小一档（见 .pane-award）。 */
+  --pane-photo-h: 54vh;
+}
+/* 逐位颁奖的照片比致辞小一档、也不提那么高 —— 那边姓名字号本来就大（默认 10vw），
+   照片再占满会把名字挤到没地方。两个数都只影响颁奖，致辞不受影响。 */
+.pane-award {
+  --pane-photo-h: 56vh;
+  /* 上提归零：下面让照片与文字**互相居中**，再上提就等于把照片推离那条中线。 */
+  --speech-photo-rise: 0vh;
+}
+/* 有照片时照片与姓名那一栏**横向对中**：两块各自在面板里垂直居中，于是中线重合 ——
+   原来是两块一起顶到面板上沿（align-items: flex-start），照片比文字高得多，
+   看着就是文字堆在照片上半段。致辞版式不动（那边照片单独上提过，见 --speech-photo-rise）。 */
+.pane-award.has-photo {
+  align-items: center;
+  /* 照片 + 文字**整块**往上提。用 transform 只挪画面、不动布局，所以照片与姓名的
+     相对位置（上面那条 align-items: center 对好的中线）一点不变，标题带也不受影响。
+     想再高 / 再低只改这一个数。 */
+  --award-block-rise: 8vh;
+  transform: translateY(calc(-1 * var(--award-block-rise)));
+}
+/* 有照片时：照片与文字当一对整体居中（跟致辞版式一样），中间只隔一个 gap。
+   flex: 0 1 auto 让文字栏按内容宽，不再吃掉右半屏。 */
+.pane-award.has-photo .award-main { flex: 0 1 auto; }
+.speech-text { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; }
+.pane-speech.has-photo { justify-content: center; }
+.pane-speech.has-photo .speech-text {
+  /* 姓名与下面那行职衔**互相居中**（原来是两行一起靠左，短的那行职衔就贴在姓名左端）。
+     这一栏的宽度本来就是「较宽的那一行」，所以居中 = 短的那行对齐长的那行的中线，
+     整栏在画面上的位置不变。 */
+  align-items: center; text-align: center;
+  /* 姓名 + 职衔那一栏整体左移（只在有照片的版式里）。用 transform 而不是改 .pane-speech
+     的 gap —— 改 gap 会把照片一起往右推，两块的相对位置全变；transform 只挪这一栏。
+     想再左只改这一个数。 */
+  --speech-text-shift: 44px;
+  transform: translateX(calc(-1 * var(--speech-text-shift) * var(--pane-scale, 1)));
+}
+.pane-photo { display: none; }
+/* 照片不套边框、不带底：四边由蒙版化进背景，所以看不出矩形边界 —— 棚拍的灰底原本
+   在深蓝画面上就是一块贴上去的方块。
+   没有 border / box-shadow / drop-shadow：外发光画在图框外面，会被蒙版一并抹掉，留着没用。 */
+.pane-speech.has-photo .pane-photo,
+.pane-award.has-photo .pane-photo {
+  display: block; flex: none;
+  /* 高度补偿底部化掉的那 44%：不加高的话实心部分只剩一半，在大字号姓名旁边会显小。
+     宽 = 0.75 × 高，够不着 max-width。每种环节的具体值见上面的 --pane-photo-h。 */
+  height: calc(min(var(--pane-photo-h), 34vw) * var(--pane-scale, 1)); width: auto;
+  max-width: 34vw;
+  margin-top: calc(-1 * var(--speech-photo-rise) * var(--pane-scale, 1));
+  /* 原图是 2:3 竖构图，套进 3/4 的窗口 = 从底部裁掉约 11%（0.667/0.75 = 89% 可见）——
+     下面那两条 object-* 本来是**没生效**的：width:auto 时图按原比例整张显示，cover 无从裁切。
+     只裁 11% 是故意的，收紧靠的是 --speech-photo-mask 的底边淡出。
+     4/5 裁 17%、1/1 裁 33%，一般不用动。 */
+  aspect-ratio: var(--speech-photo-aspect, 3 / 4);
+  object-fit: cover; object-position: center top;
+  -webkit-mask-image: var(--speech-photo-mask);
+  mask-image: var(--speech-photo-mask);
+  /* 两个同义写法都写上（source-in = intersect）；万一浏览器两条都不认，两层蒙版退化成
+     并集，画面回到接近改之前的方块，不会崩。 */
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+/* 「致 辞」在标题带外面、副标题正下方（见 presenter.ts 里为什么不放进 .title-stack）。
+   它是 .stage-header 的子元素，所以别的环节类型必须显式收起。 */
+.speech-label { display: none; }
+[data-kind="speech"] > .stage-header > .speech-label {
+  display: block; margin-top: 1.2vh;
+  font-size: calc(clamp(16px, 1.8vw, 28px) * var(--pane-scale, 1));
+  letter-spacing: 14px; color: #ffd266; text-indent: 14px;
+}
+/* 讲者姓名与得奖者姓名**同一个字号**：现场是同一场晚宴里交替出现的两块画面，
+   字号差一点点反而显得没调好。改这一条两边一起变。 */
+.speech-name, .award-name {
+  font-size: calc(clamp(48px, 10vw, 170px) * var(--pane-scale, 1));
+}
+.speech-name {
+  font-weight: 900; color: #fff; line-height: 1.05;
+  text-shadow: 0 0 40px rgba(255, 210, 102, 0.8), 0 0 90px rgba(56, 225, 255, 0.45);
+}
+.speech-org {
+  font-size: calc(clamp(16px, 2vw, 34px) * var(--pane-scale, 1));
+  color: #9fd6ff; max-width: 80vw;
+}
+
+/* ---- award: the current honouree ---- */
+/* 纵向定位与 .pane-speech 共用（见上面的 --pane-top）；这里只管内部排布。 */
+.award-main {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 1.4vh;
+  min-width: 0;
+  /* flex:1 只在**没有照片**时才对：那时这一栏独占整块面板，居中 = 屏幕正中。
+     配了照片就不能再撑满剩余宽度 —— 否则文字在「照片右边那一大片」里居中，
+     照片被顶到最左边、两者隔着半个屏幕。见下面 .pane-award.has-photo 的覆盖。 */
+  /* 居中写在版式里、不靠容器继承 —— #stage-layer 没有 text-align: center，少了这一条，
+     换行的那几行（公司名拆出来的「SDN BHD」、太长的公司 / 学校）会贴到左边去。 */
+  text-align: center;
+}
+/* 分组名单（服务 15 年以上 / 20 年 / 25 年）的组别抬头，翻页时跟着当前这位变；
+   没分组的名单 groupLabel 为空，:empty 自动收起，不占位。 */
+.award-group {
+  font-size: calc(clamp(14px, 1.6vw, 26px) * var(--pane-scale, 1));
+  letter-spacing: 6px; color: #ffd266;
+}
+.award-group:empty { display: none; }
+/* 长名字降档（class 由 presenter 的 fitAwardName 按估算宽度加）：默认字号是照
+   「三个中文字」调的，公司名那种长串照原字号会撑爆。短名字不带这两个 class，显示效果不变。 */
+.award-name.long { font-size: calc(clamp(30px, 5.5vw, 94px) * var(--pane-scale, 1)); }
+.award-name.xlong { font-size: calc(clamp(24px, 4vw, 66px) * var(--pane-scale, 1)); }
+/* 配了照片的那一位：姓名整体**降两档**（170 → 94 → 66 那把梯子往下挪两级）。
+   横向被照片吃掉一截之后，原来照满屏调的字号在照片旁边太压迫，六个字的
+   「默敏·安博斯」几乎顶满整行。三档一起挪，公司名那种长串照旧继续往下降。
+   想只降一档：把下面三条各往上取一级（66 / 52 / 42 → 94 / 66 / 52）。 */
+.pane-award.has-photo .award-name { font-size: calc(clamp(24px, 4vw, 66px) * var(--pane-scale, 1)); }
+.pane-award.has-photo .award-name.long { font-size: calc(clamp(20px, 3.2vw, 52px) * var(--pane-scale, 1)); }
+.pane-award.has-photo .award-name.xlong { font-size: calc(clamp(16px, 2.6vw, 42px) * var(--pane-scale, 1)); }
+/* 「SDN BHD」这类法律后缀单独一行（presenter 的 setAwardName 拆出来的） */
+.award-suffix { display: block; }
+.award-name {
+  font-weight: 900; color: #fff; line-height: 1.05;
+  text-shadow: 0 0 40px rgba(255, 210, 102, 0.85), 0 0 90px rgba(56, 225, 255, 0.45);
+  word-break: keep-all;
+}
+/* 职衔 / 任期（「第五任会长」）：金色跟组别抬头同色系但字号大一档、加一点辉光，
+   免得跟名字上方的组别看成同一层信息。没填职衔的人靠下面的 :empty 整格收起。 */
+.award-role {
+  font-size: calc(clamp(18px, 2.4vw, 40px) * var(--pane-scale, 1));
+  font-weight: 700; letter-spacing: 4px; color: #ffd266;
+  text-shadow: 0 0 26px rgba(255, 210, 102, 0.55);
+}
+.award-en { font-size: calc(clamp(16px, 2.2vw, 38px) * var(--pane-scale, 1)); font-weight: 700; color: #38e1ff; }
+.award-org { font-size: calc(clamp(14px, 1.5vw, 24px) * var(--pane-scale, 1)); color: #9fd6ff; max-width: 60vw; }
+/* 合照收尾卡每行全空 —— 姓名那格也要收起来，否则会留一个 170px 高的隐形空框。 */
+.award-name:empty, .award-role:empty, .award-en:empty, .award-org:empty { display: none; }
+/* re-run on every honouree change (JS re-adds the class) */
+.award-main.enter { animation: award-in 0.55s cubic-bezier(0.18, 1.4, 0.4, 1); }
+@keyframes award-in {
+  0% { opacity: 0; transform: scale(0.82) translateY(18px); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ---- roster ---- */
+.pane-roster { justify-content: center; align-items: stretch; }
+.roster-viewport { flex: 1; min-height: 0; overflow: hidden; display: flex; justify-content: center; padding: 2vh 0; }
+.roster-track { width: 100%; }
+.roster-track.scroll { animation: roster-scroll 40s linear infinite; }
+@keyframes roster-scroll {
+  0%, 6% { transform: translateY(0); }
+  94%, 100% { transform: translateY(var(--shift, 0px)); }
+}
+.roster-group + .roster-group { margin-top: 2.4vh; }
+.roster-group-title {
+  font-size: calc(clamp(15px, 1.7vw, 26px) * var(--pane-scale, 1));
+  letter-spacing: 5px; color: #ffd266; margin-bottom: 1vh;
+}
+.roster-names {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 90%), 1fr));
+  gap: 8px clamp(14px, 2vw, 40px);
+}
+.roster-item {
+  display: flex; align-items: baseline; gap: 10px; justify-content: flex-start; text-align: left;
+  padding: 5px 12px; border-left: 3px solid rgba(56, 225, 255, 0.45);
+  background: rgba(8, 16, 38, 0.42);
+}
+.roster-zh { font-size: calc(clamp(17px, 1.9vw, 30px) * var(--pane-scale, 1)); font-weight: 800; white-space: nowrap; }
+.roster-en { font-size: calc(clamp(12px, 1.1vw, 17px) * var(--pane-scale, 1)); color: #7fc6ff; }
+.roster-org { font-size: calc(clamp(11px, 1vw, 15px) * var(--pane-scale, 1)); color: #6f9fd0; }
+.roster-item.lead { border-left-color: #ffd266; background: rgba(40, 30, 8, 0.5); }
+.roster-item.lead .roster-zh { color: #ffd266; }
+
+/* ---- sponsor plaques ---- */
+.pane-sponsor { align-items: center; justify-content: center; }
+.sponsor-plaques {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: clamp(18px, 3vw, 56px); width: 100%;
+}
+.plaque {
+  min-width: min(34vw, 460px); padding: 3.5vh clamp(20px, 3vw, 50px);
+  background: rgba(14, 28, 64, 0.55); border: 1px solid rgba(255, 210, 102, 0.45);
+  border-radius: 16px; box-shadow: 0 0 40px rgba(255, 180, 60, 0.15);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.plaque-label {
+  font-size: calc(clamp(12px, 1.2vw, 18px) * var(--pane-scale, 1));
+  color: #06122e; font-weight: 800; letter-spacing: 3px;
+  background: linear-gradient(90deg, #ffd266, #ff9f43); padding: 3px 16px; border-radius: 999px;
+}
+.plaque-name { font-size: calc(clamp(20px, 2.6vw, 42px) * var(--pane-scale, 1)); font-weight: 900; line-height: 1.2; }
+.plaque-org { font-size: calc(clamp(13px, 1.3vw, 20px) * var(--pane-scale, 1)); color: #9fd6ff; }
+.plaque-org:empty { display: none; }

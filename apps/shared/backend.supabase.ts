@@ -17,7 +17,12 @@ import type {
   Winner,
   WinnerStatus,
 } from "../../shared/events.ts";
-import { DRAW_CHANNEL, STAGE_KEYS, STAGE_VOLUME_DEFAULT } from "../../shared/events.ts";
+import {
+  DRAW_CHANNEL,
+  STAGE_AUTO_SEC_DEFAULT,
+  STAGE_KEYS,
+  STAGE_VOLUME_DEFAULT,
+} from "../../shared/events.ts";
 import { AVATAR_MODEL_COUNT, DEFAULTS, DRAW_DEFAULTS } from "../../shared/config.ts";
 import type {
   AuthApi,
@@ -210,7 +215,7 @@ function drawBroadcastChannel() {
   return drawChannel;
 }
 
-// ---- programme segments (/stage) mappers + helpers ----
+// ---- programme segments (the /screen overlay) mappers + helpers ----
 interface SegmentRow {
   id: number;
   kind: string;
@@ -255,6 +260,7 @@ interface HonoureeRow {
   name_zh: string;
   name_en: string | null;
   org: string | null;
+  role_label: string | null;
   photo_url: string | null;
   sort: number;
 }
@@ -266,6 +272,7 @@ function rowToHonouree(r: HonoureeRow): Honouree {
     nameZh: r.name_zh,
     nameEn: r.name_en,
     org: r.org,
+    roleLabel: r.role_label ?? null,
     photoUrl: r.photo_url ?? null,
     sort: r.sort,
   };
@@ -302,26 +309,34 @@ function honoureePatch(input: HonoureeInput): Record<string, unknown> {
     name_zh: input.nameZh,
     name_en: input.nameEn ?? null,
     org: input.org ?? null,
+    role_label: input.roleLabel ?? null,
     sort: input.sort ?? 0,
   };
 }
 
 async function fetchStageState(): Promise<StageState> {
-  const [active, segmentId, index, volume] = await Promise.all([
+  const [active, segmentId, index, volume, autoSec] = await Promise.all([
     getSetting(STAGE_KEYS.active),
     getSetting(STAGE_KEYS.segmentId),
     getSetting(STAGE_KEYS.index),
     getSetting(STAGE_KEYS.volume),
+    getSetting(STAGE_KEYS.autoSec),
   ]);
   const id = Number(segmentId);
   const i = Number(index);
   const v = Number(volume);
+  const sec = Number(autoSec);
   return {
     active: active === "1",
     segmentId: segmentId && Number.isFinite(id) && id > 0 ? id : null,
     index: Number.isFinite(i) && i > 0 ? Math.floor(i) : 0,
     // 没设过（行不存在）就按满音量；写过 0 也要老实当静音，别被 || 吞掉。
     volume: volume != null && Number.isFinite(v) ? Math.max(0, Math.min(100, Math.round(v))) : STAGE_VOLUME_DEFAULT,
+    // 自动播放间隔：至少 1 秒（0 会让运维台的计时器空转），上限 120 秒。
+    autoSec:
+      autoSec != null && Number.isFinite(sec)
+        ? Math.max(1, Math.min(120, Math.round(sec)))
+        : STAGE_AUTO_SEC_DEFAULT,
   };
 }
 
@@ -650,7 +665,7 @@ const backend: Backend = {
     await drawBroadcastChannel().send({ type: "broadcast", event: evt.type, payload: evt });
   },
 
-  // ---- programme segments (/stage) ----
+  // ---- programme segments (the /screen overlay) ----
   async listSegments() {
     const { data } = await supabase.from("segments").select("*").order("sort").order("id");
     return ((data ?? []) as SegmentRow[]).map(rowToSegment);
@@ -761,7 +776,7 @@ const backend: Backend = {
   },
   async setStageState(state: StageState) {
     // Write only the keys that actually changed: each settings row update is a
-    // realtime event for every open /stage, and "下一位" should cost exactly one.
+    // realtime event for every open big screen, and "下一位" should cost exactly one.
     const cur = await fetchStageState();
     const rows: { key: string; value: string }[] = [];
     if (cur.active !== state.active) rows.push({ key: STAGE_KEYS.active, value: state.active ? "1" : "0" });
@@ -769,6 +784,7 @@ const backend: Backend = {
       rows.push({ key: STAGE_KEYS.segmentId, value: state.segmentId == null ? "" : String(state.segmentId) });
     if (cur.index !== state.index) rows.push({ key: STAGE_KEYS.index, value: String(state.index) });
     if (cur.volume !== state.volume) rows.push({ key: STAGE_KEYS.volume, value: String(state.volume) });
+    if (cur.autoSec !== state.autoSec) rows.push({ key: STAGE_KEYS.autoSec, value: String(state.autoSec) });
     if (!rows.length) return;
     const { error } = await supabase.from("settings").upsert(rows);
     if (error) throw error;
@@ -777,7 +793,7 @@ const backend: Backend = {
   subscribeStage(handlers: StageHandlers) {
     // Cue changes arrive as settings row updates. Each one re-reads the whole
     // stage state (cheap, 3 rows) plus the live segment and its honourees, so a
-    // freshly-opened or reloaded /stage recovers with no extra code path.
+    // freshly-opened or reloaded /screen recovers with no extra code path.
     let seq = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
     /** Coalesce bursts (a reorder writes one row per honouree) into one refresh. */

@@ -63,7 +63,7 @@ export interface DrawHandlers {
   onPrizes?(prizes: Prize[]): void;
 }
 
-/** /stage callbacks. State changes are the operator's cues; segments/honourees re-sync on edit. */
+/** Segment-overlay callbacks. State changes are the operator's cues; segments/honourees re-sync on edit. */
 export interface StageHandlers {
   /** Live segment + honouree cursor changed (or first load). */
   onState(state: StageState, segment: Segment | null, honourees: Honouree[]): void;
@@ -92,6 +92,8 @@ export interface HonoureeInput {
   nameZh: string;
   nameEn?: string | null;
   org?: string | null;
+  /** 职衔 / 任期（「第五任会长」）—— 逐位颁奖时显示在姓名下方。 */
+  roleLabel?: string | null;
   sort?: number;
 }
 
@@ -153,7 +155,7 @@ export interface Backend {
   subscribeDraw(handlers: DrawHandlers): void;
   broadcastDraw(evt: DrawEvent): Promise<void>;
 
-  // ---- programme segments (/stage) ----
+  // ---- programme segments (the /screen overlay) ----
   listSegments(): Promise<Segment[]>;
   listHonourees(segmentId: number): Promise<Honouree[]>;
   /** segmentId -> honouree count, for the console's rundown grid. */
@@ -182,10 +184,10 @@ export interface Backend {
   deleteHonouree(id: number): Promise<void>;
   /** Renumber a segment's honourees to the given order (console list reordering). */
   reorderHonourees(segmentId: number, orderedIds: number[]): Promise<void>;
-  /** Current stage state; drives both /stage cold-load and the console's cursor. */
+  /** Current stage state; drives both the big screen's cold-load and the console's cursor. */
   getStageState(): Promise<StageState>;
   setStageState(state: StageState): Promise<void>;
-  /** /stage subscribes; every operator cue arrives as an onState call. */
+  /** /screen subscribes; every operator cue arrives as an onState call. */
   subscribeStage(handlers: StageHandlers): void;
 
   // admin auth

@@ -112,7 +112,7 @@ export function whiteSolidCanvas(base: HTMLCanvasElement, s: number): HTMLCanvas
 }
 
 /**
- * Fill an <img> with the top-left brand mark shared by /screen and /stage:
+ * Fill an <img> with the top-left brand mark:
  * prefers the full logo carrying the "MFEIA" wordmark (LogoFull.png), falls
  * back to the icon-only Logo.png the central portal uses. No-ops when the
  * element is missing, so a page without the card can call this unconditionally.

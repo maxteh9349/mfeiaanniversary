@@ -1,3 +1,12 @@
+/* 吸顶标签栏（.tabs）是不透明的，高约 58px，会实实在在**盖住**滚到它底下的内容 ——
+   被盖住的按钮不只是看不见，是点不到（点击落在标签栏上）。
+   下面这一条给整个页面的滚动落点让出这条的高度：scrollIntoView（「编辑」跳到环节
+   编辑区、「上台」跳到抽奖控制台，都是 block: "start"）与锚点跳转全都照它停。
+   现场踩过的正是这个：点了格子上的「编辑」，编辑区顶到最上面，第一行的
+   环节下拉 / ＋新增环节 / 删除环节 三个控件正好躲在标签栏后面，怎么点都没反应。
+   改标签栏高度（字号 / padding）时这个数要跟着调。 */
+html { scroll-padding-top: 72px; }
+
 body {
   font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   background: #0a1530; color: #eaf2ff; max-width: 1080px; margin: 0 auto; padding: 24px;
@@ -10,6 +19,9 @@ h1 { font-size: 22px; color: #38e1ff; }
   position: sticky; top: 0; z-index: 20;
   display: flex; gap: 8px; margin: 14px 0 18px; padding: 10px 0;
   background: #0a1530;
+  /* 底边一道淡影：让人看出「内容是从这条下面滚过去的」。原来标签栏与页面同色，
+     滚上去的按钮凭空消失，看着像页面自己少了一行，而不是被盖住。 */
+  box-shadow: 0 10px 12px -10px rgba(4, 10, 28, 0.95);
 }
 .tabs button {
   padding: 9px 22px; font-size: 15px; border-radius: 999px;
@@ -63,7 +75,7 @@ label { display: flex; align-items: center; gap: 6px; }
 .login-card input { padding: 10px 12px; font-size: 15px; }
 .login-card button { padding: 10px; font-size: 15px; }
 
-/* Programme-segment (/stage) operator panel */
+/* Programme-segment operator panel (cues the /screen segment overlay) */
 .stage-box { border-color: rgba(127, 198, 255, 0.4); }
 .stage-go { background: linear-gradient(90deg, #7ac943, #2fa36b); color: #04220f; }
 .hint { color: #8aa0c8; font-size: 13px; }
@@ -175,6 +187,19 @@ label { display: flex; align-items: center; gap: 6px; }
 .draw-go { background: linear-gradient(90deg, #ffd266, #ff9f43); color: #2a1600; }
 .draw-stop { background: linear-gradient(90deg, #ff6b6b, #d63447); color: #fff; }
 .danger { background: linear-gradient(90deg, #ff6b6b, #d63447); color: #fff; }
+/* 等第二次点击的按钮（见 admin.ts 的 confirmTwice）——一律盖成实心红 + 呼吸描边，
+   隔着一米也看得出「这一下真的会删」。!important 是为了压过 .ghost / .w-del 那类
+   透明底按钮各自的配色，armed 状态在全表统一长一个样。 */
+button.armed {
+  background: linear-gradient(90deg, #ff6b6b, #d63447) !important;
+  color: #fff !important;
+  border: 1px solid #ffd0d0 !important;
+  animation: armed-pulse 1s ease-in-out infinite;
+}
+@keyframes armed-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.6); }
+  50% { box-shadow: 0 0 0 6px rgba(255, 107, 107, 0); }
+}
 button.ghost { background: transparent; color: #9fd6ff; border: 1px solid rgba(56, 225, 255, 0.4); }
 .list .w-claim { background: linear-gradient(90deg, #38e1ff, #2a6cff); }
 .list .w-forfeit { background: transparent; color: #ff9f9f; border: 1px solid rgba(255, 120, 120, 0.5); }

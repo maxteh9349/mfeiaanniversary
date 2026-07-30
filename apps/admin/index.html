@@ -47,6 +47,17 @@
         <button id="g-jump-go" class="ghost">跳转</button>
         <span class="hint">键盘 ← / → 可直接翻名单</span>
       </div>
+
+      <!--
+        自动翻名单：逐位颁奖（照片 + 姓名）按设定的秒数自己往下走，主持人不用一直点。
+        计时器跑在这个运维台页面里，所以**这一页要留在前台**；关掉或刷新就停（防止
+        没人看着的标签页继续推大屏）。手动翻页会重新计时。
+      -->
+      <div class="row" style="margin-top: 10px">
+        <button id="g-auto" class="ghost">▶ 自动播放</button>
+        <label>每 <input type="number" id="g-auto-sec" min="1" max="120" step="1" style="width: 70px" /> 秒</label>
+        <span class="hint">逐位颁奖专用 · 秒数随时可改，跑着也能改</span>
+      </div>
       <div id="g-cursor" class="cursor"></div>
       <div id="g-msg" class="msg"></div>
     </section>
@@ -110,6 +121,7 @@
           <option value="speech">致辞</option>
           <option value="roster">整屏名单</option>
           <option value="award">逐位颁奖</option>
+          <option value="slides">幻灯片</option>
           <option value="sponsor_thanks">赞助商感谢状</option>
           <option value="lucky_draw">幸运抽奖</option>
         </select>
@@ -138,8 +150,9 @@
       </div>
 
       <!--
-        大屏上不再显示的字段收在这里：副标题只在 /stage 致辞版式当讲者名兜底，
-        备注哪里都不显示，颁发人 / 陪同只在 /stage 页脚。数据列全部保留。
+        大屏上不显示的字段收在这里：副标题只在致辞版式没有名单时当讲者名兜底
+        （见 apps/screen/segments/presenter.ts 的 renderSpeech）；备注、颁发人、陪同
+        大屏一概不显示，只留给操作者看。数据列全部保留。
       -->
       <details class="more">
         <summary>更多设置（副标题 · 颁发人 · 陪同 · 备注）</summary>
@@ -163,6 +176,8 @@
         <input id="h-zh" placeholder="姓名 / 公司 *" style="min-width: 160px" />
         <input id="h-en" placeholder="英文名" style="min-width: 160px" />
         <input id="h-org" placeholder="公司 / 学校 / 职衔" style="min-width: 160px" />
+        <!-- 逐位颁奖时显示在姓名下面的一行头衔；只影响颁奖版式，整屏名单不读它。 -->
+        <input id="h-role" placeholder="职衔 如 第五任会长" style="min-width: 160px" />
         <input id="h-group" placeholder="分组标题 如 服务15年以上" style="min-width: 180px" />
         <button id="h-save">添加</button>
         <button id="h-cancel" class="ghost" hidden>取消编辑</button>
@@ -215,17 +230,16 @@
       <div id="t-msg" class="msg"></div>
     </section>
 
-    <!-- 只在「另开一块屏单独放整页」或排练时才用得到，别占现场页 -->
+    <!-- 只在「另开一块屏单独放抽奖」或排练时才用得到，别占现场页 -->
     <section class="box" data-tab="setup">
       <h2>备用整页大屏 / 排练</h2>
       <div class="row">
-        <button id="g-fullscreen" class="ghost">流程整页 /stage ↗</button>
         <button id="d-fullscreen" class="ghost">抽奖整页 /draw ↗</button>
         <button id="d-return" class="ghost">通知 /draw 返回大厅 ↩</button>
       </div>
       <div class="hint" style="margin-top: 10px">
         大屏正常只需开 <b>/screen</b> 一个页面 —— 环节、短片、抽奖都叠在上面。
-        这里的整页版本是给「第二块屏」或排练用的。
+        这里的 /draw 整页是给「第二块屏」或排练用的。
       </div>
     </section>
 

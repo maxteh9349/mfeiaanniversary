@@ -8,7 +8,7 @@ import type {
   StageState,
   WinnerStatus,
 } from "../../shared/events.ts";
-import { STAGE_VOLUME_DEFAULT } from "../../shared/events.ts";
+import { STAGE_AUTO_SEC_DEFAULT, STAGE_VOLUME_DEFAULT } from "../../shared/events.ts";
 import { DRAW_DEFAULTS } from "../../shared/config.ts";
 import { getBackend } from "../shared/backend.ts";
 
@@ -28,6 +28,7 @@ const SEGMENT_KINDS: Record<SegmentKind, string> = {
   speech: "致辞",
   roster: "整屏名单",
   award: "逐位颁奖",
+  slides: "幻灯片",
   sponsor_thanks: "赞助商感谢状",
   lucky_draw: "幸运抽奖",
 };
@@ -38,7 +39,54 @@ const SEGMENT_KINDS: Record<SegmentKind, string> = {
 const CONSOLE_DOMAIN = "mfeia.local";
 const CONSOLE_PW = "mfeia-console-2026";
 
+/** 有名单游标的环节：上一位 / 下一位、← →、跳转、自动播放都只对这两种开放。
+    逐位颁奖翻的是人，幻灯片翻的是页 —— 底下是同一个 stage.index。 */
+const steppable = (kind: SegmentKind): boolean => kind === "award" || kind === "slides";
+
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+// ---- 二次确认：页面内两步，不用浏览器原生 confirm() -------------------------
+// 为什么不用 confirm()：同一个页面弹过几次对话框之后，Chrome 会在对话框上多给一个
+// 「阻止此页面再创建对话框」的勾选框；一旦勾上（或对话框弹到了另一块屏幕后面），
+// confirm() 就直接返回 false 且不弹任何东西 —— 所有「删除 / 移除」按钮从此点了**毫无反应**，
+// 连一行提示都没有，现场只会以为按键坏了。改成页面内两步：第一次点把按钮变成
+// 「再点一次确认」，ARM_MS 内再点同一个按钮才真执行，超时自动复原。
+const ARM_MS = 6000;
+/** 正在等第二次点击的按钮 -> 复原用的原文案与超时。 */
+const armed = new Map<HTMLElement, { label: string; timer: ReturnType<typeof setTimeout> }>();
+
+function disarm(btn: HTMLElement): void {
+  const state = armed.get(btn);
+  if (!state) return;
+  clearTimeout(state.timer);
+  btn.textContent = state.label;
+  btn.classList.remove("armed");
+  armed.delete(btn);
+}
+
+/**
+ * 第一次调用只是亮出确认（返回 false）；ARM_MS 内第二次调用返回 true，让调用方去执行。
+ * `note` 会写进那一块的消息条，说明「按下去会发生什么」——按钮本身只放得下四个字。
+ */
+function confirmTwice(btn: HTMLElement, msgEl: HTMLElement, note: string, armedLabel = "再点一次确认"): boolean {
+  if (armed.has(btn)) {
+    disarm(btn);
+    msgEl.textContent = "";
+    return true;
+  }
+  const label = btn.textContent ?? "";
+  btn.textContent = armedLabel;
+  btn.classList.add("armed");
+  msgEl.textContent = `${note}（${ARM_MS / 1000} 秒内再点一次「${label}」执行，否则自动取消）`;
+  armed.set(btn, {
+    label,
+    timer: setTimeout(() => {
+      disarm(btn);
+      msgEl.textContent = "已自动取消";
+    }, ARM_MS),
+  });
+  return false;
+}
 
 // ---- 现场 / 布置 两页 -------------------------------------------------------
 // 纯展示层：body[data-tab] 决定显示哪一组板块，所有板块照常初始化（隐藏的也能用），
@@ -144,11 +192,12 @@ void (async () => {
     }
   });
 
-  // Danger zone: wipe all attendee + draw data. Double-confirm — it is irreversible.
+  // Danger zone: wipe all attendee + draw data. 两步确认 —— 不可撤销。
   const clearMsg = $("clear-msg");
-  $("clear-all").addEventListener("click", async () => {
-    if (!confirm("确定要清除全部数据吗？\n\n将永久删除：所有签到记录、嘉宾、中奖记录与抽奖日志。\n保留：赞助商、奖品、大屏设置。\n\n此操作不可撤销！")) return;
-    if (!confirm("再次确认：真的要清空吗？")) return;
+  const clearBtn = $("clear-all");
+  clearBtn.addEventListener("click", async () => {
+    if (!confirmTwice(clearBtn, clearMsg, "将永久删除所有签到记录 / 嘉宾 / 中奖记录与抽奖日志，保留赞助商 / 奖品 / 大屏设置"))
+      return;
     clearMsg.textContent = "清除中…";
     try {
       await backend.resetEvent();
@@ -280,7 +329,7 @@ void (async () => {
     });
   }
 
-  // ---- programme segments (/stage) ---------------------------------------
+  // ---- programme segments (cue the /screen overlay) -----------------------
   const gMsg = $("g-msg");
   const eMsg = $("e-msg");
   const hList = $<HTMLUListElement>("h-list");
@@ -289,7 +338,13 @@ void (async () => {
   let editing: Honouree[] = [];
   let editingSegmentId: number | null = null;
   let editingHonoureeId: number | null = null;
-  let stage: StageState = { active: false, segmentId: null, index: 0, volume: STAGE_VOLUME_DEFAULT };
+  let stage: StageState = {
+    active: false,
+    segmentId: null,
+    index: 0,
+    volume: STAGE_VOLUME_DEFAULT,
+    autoSec: STAGE_AUTO_SEC_DEFAULT,
+  };
   /** 点「静音」前的音量，再点一下要能回到原来的大小。 */
   let volumeBeforeMute = STAGE_VOLUME_DEFAULT;
   /** Tile highlighted in the rundown grid (selection ≠ what is on the screen). */
@@ -411,7 +466,7 @@ void (async () => {
       tile.appendChild(meta);
 
       // Progress only makes sense for the award segment currently being called.
-      if (live && s.kind === "award" && total > 0) {
+      if (live && steppable(s.kind) && total > 0) {
         const prog = document.createElement("div");
         prog.className = "seg-progress";
         const bar = document.createElement("span");
@@ -451,7 +506,7 @@ void (async () => {
       el.textContent = "大屏当前：签到大厅（未上台任何环节）";
       return;
     }
-    if (seg.kind !== "award") return;
+    if (!steppable(seg.kind)) return;
     const list = await honoureesOf(seg.id);
     if (stage.index >= list.length) {
       el.textContent = "本环节已到「合照」收尾";
@@ -507,8 +562,10 @@ void (async () => {
 
   /** Clamp an award cursor to [0, count] — count itself is the 合照 card. */
   async function maxIndex(seg: Segment | undefined): Promise<number> {
-    if (!seg || seg.kind !== "award") return 0;
-    return (await honoureesOf(seg.id)).length;
+    if (!seg || !steppable(seg.kind)) return 0;
+    const count = (await honoureesOf(seg.id)).length;
+    // 逐位颁奖多一格「合照」收尾卡（四行留空）；幻灯片没有那一格，最后一页就是尽头。
+    return seg.kind === "slides" ? Math.max(0, count - 1) : count;
   }
 
   /** Put a segment on the big screen and tick it as played. */
@@ -516,6 +573,7 @@ void (async () => {
     const seg = segById(id);
     if (!seg) return void (gMsg.textContent = "环节不存在，请刷新");
     selectedSegmentId = id;
+    stopAuto(); // 换环节先停自动播放，免得新环节被上一段的节奏推着走
     try {
       await applyStage({ ...stage, active: true, segmentId: id, index: 0 });
       await backend.markSegmentAired(id);
@@ -571,18 +629,20 @@ void (async () => {
 
   // 「⟲ 一键恢复环节」：排练跑完一遍后，把整场流程恢复成未开始的样子 ——
   // 清掉全部已播标记 + 大屏退回大厅 + 游标归零。环节内容 / 名单 / 图片 / 短片全不动。
-  $("g-clear-aired").addEventListener("click", async () => {
+  const clearAiredBtn = $("g-clear-aired");
+  clearAiredBtn.addEventListener("click", async () => {
     const hasMarks = segments.some((s) => s.airedAt != null);
     if (!hasMarks && !stage.active) return void (gMsg.textContent = "流程已经是未开始状态");
     if (
-      !confirm(
-        "确定把整场流程重置到未开始吗？\n" +
-          "会清除全部「已播」标记，并让大屏退回大厅画面。\n" +
-          "环节内容、名单、图片、短片都不受影响。",
+      !confirmTwice(
+        clearAiredBtn,
+        gMsg,
+        "会清除全部「已播」标记并让大屏退回大厅画面；环节内容 / 名单 / 图片 / 短片不受影响",
       )
     ) {
       return;
     }
+    stopAuto();
     try {
       if (hasMarks) {
         await backend.clearAiredMarks();
@@ -599,7 +659,7 @@ void (async () => {
   async function step(delta: number): Promise<void> {
     const seg = segById(stage.segmentId);
     if (!stage.active || !seg) return void (gMsg.textContent = "尚未上台任何环节");
-    if (seg.kind !== "award") return void (gMsg.textContent = "该环节不是逐位颁奖，无需翻名单");
+    if (!steppable(seg.kind)) return void (gMsg.textContent = "该环节不用翻页（只有逐位颁奖 / 幻灯片有游标）");
     const top = await maxIndex(seg);
     const index = Math.max(0, Math.min(top, stage.index + delta));
     if (index === stage.index) {
@@ -609,6 +669,8 @@ void (async () => {
     try {
       await applyStage({ ...stage, index });
       gMsg.textContent = "";
+      // 自动播放期间手动翻页 = 从这一位重新计时，免得刚翻完立刻又被推走。
+      if (autoOn) scheduleAuto();
     } catch (err) {
       gMsg.textContent = `切换失败：${(err as Error).message}`;
     }
@@ -616,6 +678,89 @@ void (async () => {
 
   $("g-next").addEventListener("click", () => void step(1));
   $("g-prev").addEventListener("click", () => void step(-1));
+
+  // ---- 自动播放：逐位颁奖按秒数自己往下翻 ------------------------------------
+  // 计时器**跑在这个页面里**（不是大屏、也不是数据库）：每一跳都走与「下一位」完全
+  // 相同的那条路（写 stage 状态 → 大屏实时跟随），所以自动与手动不会各走各的。
+  // 代价是这一页要开着；关掉 / 刷新就停 —— 这反而是想要的：没人看着的标签页不该
+  // 继续推大屏。间隔秒数存进 stage 状态（同音量），换机器或刷新后还是同一个节奏。
+  //
+  // 用 setTimeout 链而不是 setInterval：每跳中间有 await（读名单人数 + 写状态），
+  // setInterval 会在慢网络下叠着触发，链式的写法保证「上一跳落地后才开始计下一次」。
+  const autoBtn = $("g-auto");
+  const autoSecInput = $<HTMLInputElement>("g-auto-sec");
+  let autoOn = false;
+  let autoTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function renderAuto(): void {
+    autoSecInput.value = String(stage.autoSec);
+    autoBtn.textContent = autoOn ? "⏸ 停止自动" : "▶ 自动播放";
+    autoBtn.classList.toggle("ghost", !autoOn);
+    autoBtn.classList.toggle("draw-stop", autoOn);
+  }
+
+  function scheduleAuto(): void {
+    if (autoTimer) clearTimeout(autoTimer);
+    autoTimer = setTimeout(() => void autoTick(), Math.max(1, stage.autoSec) * 1000);
+  }
+
+  function stopAuto(msg?: string): void {
+    if (autoTimer) clearTimeout(autoTimer);
+    autoTimer = null;
+    autoOn = false;
+    renderAuto();
+    if (msg) gMsg.textContent = msg;
+  }
+
+  async function autoTick(): Promise<void> {
+    if (!autoOn) return;
+    const seg = segById(stage.segmentId);
+    if (!stage.active || !seg) return stopAuto("自动播放已停止：大屏已回到大厅画面");
+    if (!steppable(seg.kind)) return stopAuto("自动播放已停止：当前环节没有可翻的名单 / 页面");
+    const top = await maxIndex(seg);
+    if (!autoOn) return; // 等 maxIndex 的这段时间里被按了停止
+    if (stage.index >= top) return stopAuto("自动播放结束：已翻到本环节最后");
+    try {
+      await applyStage({ ...stage, index: stage.index + 1 });
+    } catch (err) {
+      return stopAuto(`自动播放已停止：${(err as Error).message}`);
+    }
+    if (!autoOn) return;
+    if (stage.index >= top) return stopAuto("自动播放结束：已翻到本环节最后");
+    gMsg.textContent = `自动播放中 · 每 ${stage.autoSec} 秒下一位`;
+    scheduleAuto();
+  }
+
+  function startAuto(): void {
+    const seg = segById(stage.segmentId);
+    if (!stage.active || !seg) return void (gMsg.textContent = "请先让一个环节上台");
+    if (!steppable(seg.kind)) return void (gMsg.textContent = "只有逐位颁奖 / 幻灯片环节才需要自动播放");
+    autoOn = true;
+    renderAuto();
+    gMsg.textContent = `自动播放中 · 每 ${stage.autoSec} 秒下一位`;
+    scheduleAuto();
+  }
+
+  autoBtn.addEventListener("click", () => {
+    if (autoOn) stopAuto("已停止自动播放");
+    else startAuto();
+  });
+
+  /** 秒数写进 stage 状态；正在跑就按新秒数重新计时（不用先停再开）。 */
+  async function setAutoSec(sec: number): Promise<void> {
+    const v = Math.max(1, Math.min(120, Math.round(sec)));
+    if (!Number.isFinite(sec) || v === stage.autoSec) return void renderAuto();
+    try {
+      await applyStage({ ...stage, autoSec: v });
+      gMsg.textContent = autoOn ? `自动播放中 · 每 ${v} 秒下一位` : `自动播放间隔已设为 ${v} 秒`;
+      if (autoOn) scheduleAuto();
+    } catch (err) {
+      gMsg.textContent = `设置失败：${(err as Error).message}`;
+      renderAuto(); // 写失败就把输入框拨回真实值
+    }
+  }
+
+  autoSecInput.addEventListener("change", () => void setAutoSec(Number(autoSecInput.value)));
 
   $("g-jump-go").addEventListener("click", async () => {
     const seg = segById(stage.segmentId);
@@ -632,10 +777,9 @@ void (async () => {
     }
   });
 
-  $("g-fullscreen").addEventListener("click", () => window.open("/stage", "_blank"));
-
-  // End the segment: /stage sees active=false and hands the screen back to /screen.
+  // End the segment: /screen sees active=false and fades the overlay back to the lobby.
   $("g-return").addEventListener("click", async () => {
+    stopAuto();
     try {
       await applyStage({ ...stage, active: false });
       gMsg.textContent = "已通知大屏返回大厅画面";
@@ -735,14 +879,15 @@ void (async () => {
     input.value = "";
   });
 
-  $("e-img-del").addEventListener("click", () => {
-    if (!confirm("确定移除这个环节的大图吗？\n上台时大屏将改为显示标题文字卡。")) return;
+  const imgDelBtn = $("e-img-del");
+  imgDelBtn.addEventListener("click", () => {
+    if (!confirmTwice(imgDelBtn, eMsg, "移除这个环节的大图，上台时大屏改为显示标题文字卡")) return;
     void saveSegmentImage(null);
   });
 
   function resetHonoureeForm(): void {
     editingHonoureeId = null;
-    for (const id of ["h-zh", "h-en", "h-org", "h-group"]) $<HTMLInputElement>(id).value = "";
+    for (const id of ["h-zh", "h-en", "h-org", "h-role", "h-group"]) $<HTMLInputElement>(id).value = "";
     $("h-save").textContent = "添加";
     $<HTMLButtonElement>("h-cancel").hidden = true;
   }
@@ -762,7 +907,7 @@ void (async () => {
       name.textContent = h.nameZh;
       const meta = document.createElement("span");
       meta.className = "company";
-      meta.textContent = [h.nameEn, h.org].filter(Boolean).join(" · ");
+      meta.textContent = [h.roleLabel, h.nameEn, h.org].filter(Boolean).join(" · ");
       const group = document.createElement("span");
       group.className = "h-group";
       group.textContent = h.groupLabel ?? "";
@@ -834,19 +979,25 @@ void (async () => {
     }
   });
 
-  $("e-del").addEventListener("click", async () => {
+  const segDelBtn = $("e-del");
+  segDelBtn.addEventListener("click", async () => {
     if (editingSegmentId == null) return void (eMsg.textContent = "没有选中的环节");
     const seg = segById(editingSegmentId);
-    if (!confirm(`确定删除环节「${seg?.titleZh ?? ""}」及其名单吗？\n此操作不可撤销。`)) return;
+    if (!confirmTwice(segDelBtn, eMsg, `删除环节「${seg?.titleZh ?? ""}」及其整份名单，不可撤销`)) return;
+    const doomedId = editingSegmentId;
     try {
-      await backend.deleteSegment(editingSegmentId);
-      honoureeCache.delete(editingSegmentId);
+      await backend.deleteSegment(doomedId);
+      honoureeCache.delete(doomedId);
       // Deleting the live segment leaves the screen pointing at nothing — park it.
-      if (stage.segmentId === editingSegmentId) await applyStage({ ...stage, active: false, segmentId: null, index: 0 });
+      if (stage.segmentId === doomedId) await applyStage({ ...stage, active: false, segmentId: null, index: 0 });
       editingSegmentId = null;
       await loadSegments();
       await openSegment(segments[0]?.id ?? null);
-      eMsg.textContent = "已删除环节";
+      // 重读之后那一条还在 = 删除被数据库挡下了（RLS 下未登录的删除不报错，只是影响 0 行）。
+      // 不核对的话这里会报「已删除环节」，而格子墙上那一格还在，比直接报错更难查。
+      eMsg.textContent = segments.some((s) => s.id === doomedId)
+        ? "删除没有生效 —— 数据库拒绝了这次删除（请确认运维台已登录，然后重试）"
+        : "已删除环节";
     } catch (err) {
       eMsg.textContent = `删除失败：${(err as Error).message}`;
     }
@@ -860,6 +1011,7 @@ void (async () => {
       nameZh,
       nameEn: $<HTMLInputElement>("h-en").value.trim() || null,
       org: $<HTMLInputElement>("h-org").value.trim() || null,
+      roleLabel: $<HTMLInputElement>("h-role").value.trim() || null,
       groupLabel: $<HTMLInputElement>("h-group").value.trim() || null,
     };
     try {
@@ -904,7 +1056,9 @@ void (async () => {
   $("h-photo-file").addEventListener("change", async (e) => {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (file && photoTargetId != null) await setHonoureePhoto(photoTargetId, await fileToDataUrl(file));
+    if (file && photoTargetId != null) {
+      await setHonoureePhoto(photoTargetId, await fileToDataUrl(file, PORTRAIT_OPTS));
+    }
     input.value = "";
     photoTargetId = null;
   });
@@ -923,19 +1077,21 @@ void (async () => {
         $<HTMLInputElement>("h-zh").value = h.nameZh;
         $<HTMLInputElement>("h-en").value = h.nameEn ?? "";
         $<HTMLInputElement>("h-org").value = h.org ?? "";
+        $<HTMLInputElement>("h-role").value = h.roleLabel ?? "";
         $<HTMLInputElement>("h-group").value = h.groupLabel ?? "";
         $("h-save").textContent = "保存修改";
         $<HTMLButtonElement>("h-cancel").hidden = false;
         return;
       }
+      const btn = e.target as HTMLElement;
       if (cls.contains("h-del")) {
-        if (!confirm(`确定删除「${editing[i].nameZh}」吗？`)) return;
+        if (!confirmTwice(btn, eMsg, `从名单里删掉「${editing[i].nameZh}」`, "确定?")) return;
         await backend.deleteHonouree(id);
         if (editingHonoureeId === id) resetHonoureeForm();
       } else if (cls.contains("h-photo-set")) {
         // 已有照片就先问要不要移除，否则弹文件选择器 —— 与环节大图同一套交互。
         if (editing[i].photoUrl) {
-          if (confirm(`「${editing[i].nameZh}」已配照片。\n确定要移除吗？\n（要换一张请先移除再上传）`)) {
+          if (confirmTwice(btn, eMsg, `移除「${editing[i].nameZh}」的照片（要换一张请先移除再上传）`, "确定?")) {
             await setHonoureePhoto(id, null);
           }
           return;
@@ -965,6 +1121,7 @@ void (async () => {
     stage = await backend.getStageState();
     volumeBeforeMute = stage.volume || STAGE_VOLUME_DEFAULT;
     renderVolume();
+    renderAuto();
     await loadSegments();
     await renderCursor();
     await openSegment(stage.segmentId ?? segments[0]?.id ?? null);
@@ -1129,7 +1286,8 @@ void (async () => {
         await backend.setWinnerStatus(id, "forfeit");
         await loadPrizes();
       } else if (t.classList.contains("w-del")) {
-        if (!confirm("确定删除这条中奖记录吗？\n若该中奖仍有效，将归还奖品名额与该嘉宾的抽奖资格。")) return;
+        if (!confirmTwice(t, dMsg, "删除这条中奖记录；若该中奖仍有效，会归还奖品名额与该嘉宾的抽奖资格", "确定?"))
+          return;
         await backend.deleteWinner(id);
         await loadPrizes();
       } else return;
@@ -1148,25 +1306,37 @@ void (async () => {
   void initStage();
 })();
 
-/** Read + downscale an image file to a data URL (logos kept ≤512px). */
-function fileToDataUrl(file: File): Promise<string> {
+/**
+ * Read + downscale an image file to a data URL.
+ *
+ * 默认档是照**赞助商 logo** 调的：512px PNG（logo 要留透明底，尺寸也用不着更大）。
+ * 照片类的图得自己传 opts —— 讲者肖像按默认档走会在大屏上明显发虚（版式里照片高
+ * min(46vh, 34vw)，4K 下将近 1000px）。照片用 JPEG：同样清晰度体积只有 PNG 的几分之一。
+ */
+function fileToDataUrl(
+  file: File,
+  opts: { max?: number; mime?: "image/png" | "image/jpeg"; quality?: number } = {},
+): Promise<string> {
+  const { max = 512, mime = "image/png", quality = 0.88 } = opts;
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
-      const max = 512;
       const scale = Math.min(1, max / Math.max(img.width, img.height));
       const c = document.createElement("canvas");
       c.width = Math.round(img.width * scale);
       c.height = Math.round(img.height * scale);
       c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
       URL.revokeObjectURL(url);
-      resolve(c.toDataURL("image/png"));
+      resolve(c.toDataURL(mime, quality));
     };
     img.onerror = reject;
     img.src = url;
   });
 }
+
+/** 讲者肖像：竖构图 2:3，长边 1200 够 4K 用。见 assets/speaker/README.md。 */
+const PORTRAIT_OPTS = { max: 1200, mime: "image/jpeg", quality: 0.88 } as const;
 
 function esc(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);

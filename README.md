@@ -7,7 +7,8 @@
 - 大屏：Three.js + Vite + TypeScript（`apps/screen`）
 - 签到页：手机端 Web 表单（`apps/checkin`）
 - 幸运抽奖大屏：`apps/draw`
-- 晚宴流程环节大屏：`apps/stage`（致辞 / 就职名单 / 逐位颁奖 / 赞助商感谢状）
+- 晚宴流程环节版式：`apps/screen/segments`（致辞 / 就职名单 / 逐位颁奖 / 赞助商感谢状），
+  叠在大屏上演，不是独立页面
 - 运维台：`apps/admin`
 - 后端：Node + Express + WebSocket（`server/`），数据用 **Node 内置 `node:sqlite`**（无需原生编译）
 
@@ -26,8 +27,8 @@ npm start            # 单进程：后端 + 托管 dist（默认 :8080，可用 
 - 大屏浏览器全屏打开 `http://localhost:8080/screen`
 - 手机签到：扫大屏二维码，或访问启动日志打印的 `http://<局域网IP>:8080/checkin`
 - 运维台：`http://localhost:8080/admin`
-- 幸运抽奖大屏：`/draw`；晚宴流程环节大屏：`/stage`（两者与抽奖模块一样仅在
-  Supabase 后端下可用，本地 Express 模式会明确报错）
+- 幸运抽奖大屏：`/draw`（备用第二块屏；抽奖照常叠在 `/screen` 上。抽奖与晚宴流程
+  模块仅在 Supabase 后端下可用，本地 Express 模式会明确报错）
 
 ## 晚宴流程环节
 按 2026 年 49 周年晚宴流程表（Rundown）把每个环节做成大屏画面。**默认走叠加**：
@@ -51,9 +52,10 @@ npm start            # 单进程：后端 + 托管 dist（默认 :8080，可用 
   并在画面下方提示。详见 `assets/video/README.md`。
 - 叠加期间签到照常记录，只是**不弹**全屏欢迎海报，免得盖住台上画面。
 
-`/stage` 是另一块可选的整页版式（`title` 过场标题、`speech` 致辞、`roster` 整屏名单、
-`award` 逐位颁奖、`sponsor_thanks` 赞助商感谢状），需要文字排版时另开一块屏用；
-它不读环节图片，与上面的叠加互不影响。
+需要文字排版的环节（`speech` 致辞、`roster` 整屏名单、`award` 逐位颁奖、
+`sponsor_thanks` 赞助商感谢状）走**版式**而不是配图：版式在 `apps/screen/segments/`
+（`presenter.ts` 建 DOM + `panes.css` 定字号版位），同样叠在 `/screen` 上演，不读环节图片。
+曾经有一块 `/stage` 整页大屏放同一份版式，叠加层完全取代了它，那一页已删。
 
 - 运维台「晚宴流程 · 环节控制台」把整场流程平铺成**格子墙**：每格显示时间、标题、
   类型与名单人数；点格子选中，格子内 `▶ 上台` 才切大屏（防现场误点）。正在播的
@@ -61,9 +63,23 @@ npm start            # 单进程：后端 + 托管 dist（默认 :8080，可用 
   可用「清除已播标记」重置，「一键清除全部数据」也会清）。
 - `award` 环节用 **上一位 / 下一位**（或键盘 `←` `→`）逐位点名，格子上直接显示
   「第 7 / 14 位」进度条；翻到最后一位之后是「合照」收尾卡。
+- **幻灯片环节**（`kind=slides`）：PPT 导出的整屏图，一页一张，手动 ← → 翻页 ——
+  一页存成名单里的一条记录（图在 `honourees.photo_url`），所以翻页 / 调序 / 换图全部
+  复用逐位颁奖那套现成机制。见 `assets/slides/README.md`。
+- **▶ 自动播放**：逐位颁奖 / 幻灯片可以按设定的秒数自己往下翻（旁边的「每 N 秒」随时可改，
+  跑着改也立刻生效；秒数存在 `settings.stageAutoSec`，刷新 / 换机器都保留）。
+  计时器跑在运维台页面里，走的是与「下一位」完全相同的那条路，所以自动与手动不冲突 ——
+  中途手动翻一页只是重新计时。**运维台这一页要留在前台**（浏览器会掐后台标签页的计时器）；
+  关掉页面、换环节、返回大厅、翻到最后一位都会自动停下。
+- 逐位颁奖这一位**有照片就照片在左、文字在右**（与致辞版式共用同一套蒙版与尺寸，
+  没照片的仍是原来的居中版式，同一环节里混着有图 / 没图也不会错位）。第二十三届理事
+  那 24 张打包在 `assets/committee/`，见该目录的 README 与 `0016_committee_photos.sql`。
+- 逐位颁奖的文字从上到下是：分组抬头 → 姓名 → **职衔** → 英文名 → 公司 / 学校。
+  职衔是名单里单独一格（`honourees.role_label`，见 `0013_honouree_role_label.sql`），
+  填「第五任会长」这种本会身份；与公司名分开存，两行都能同时上屏，留空则整行收起。
 - 环节状态存在 `settings`（`stageActive` / `stageSegmentId` / `stageIndex`），既是
   实时指令也是恢复状态：大屏中途刷新仍停在同一环节的同一位。
-- **返回大厅大屏 ↩** 收起 `/screen` 的叠加层（若开着 `/stage`，它同时跳回 `/screen`）。
+- **返回大厅大屏 ↩** 收起 `/screen` 的叠加层，画面回到 3D 社交大厅。
 - 名单由 `supabase/migrations/0007_stage_seed.sql` 从流程表灌入，运维台
   「环节 & 名单管理」可临场增删改与调序。
 
@@ -81,7 +97,7 @@ npm run import -- data/guests.csv   # 列：name,company,gender,role（仅 name 
 2. SQL Editor 按序运行 `supabase/migrations/` 下的全部脚本（`0001_init.sql` 建表 + RLS +
    `checkin_guest` RPC + `uploads` 存储桶 + Realtime；`0002`–`0005` 抽奖模块；
    `0006_stage.sql` + `0007_stage_seed.sql` 晚宴流程环节与名单，`0008` 已播标记，
-   `0009_segment_image.sql` 环节大图）。
+   `0009_segment_image.sql` 环节大图，`0010`–`0013` 环节短片 / 人物照片 / 得奖者职衔）。
 3. Authentication → Users → **Add user**，创建一个运维台管理员（邮箱+密码）。
 
 ### 2. 本地连云端自测
