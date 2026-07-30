@@ -255,6 +255,7 @@ interface HonoureeRow {
   name_zh: string;
   name_en: string | null;
   org: string | null;
+  photo_url: string | null;
   sort: number;
 }
 function rowToHonouree(r: HonoureeRow): Honouree {
@@ -265,6 +266,7 @@ function rowToHonouree(r: HonoureeRow): Honouree {
     nameZh: r.name_zh,
     nameEn: r.name_en,
     org: r.org,
+    photoUrl: r.photo_url ?? null,
     sort: r.sort,
   };
 }
@@ -292,6 +294,8 @@ function segmentPatch(input: SegmentInput): Record<string, unknown> {
   };
 }
 
+/** 与 segmentPatch 同理，刻意不含 `photo_url` —— 它归 setHonoureePhoto 管，
+    所以在运维台改个名字 / 职衔再保存，照片不会被顺手清掉。 */
 function honoureePatch(input: HonoureeInput): Record<string, unknown> {
   return {
     group_label: input.groupLabel ?? null,
@@ -726,6 +730,12 @@ const backend: Backend = {
     const patch = honoureePatch(input);
     if (input.sort == null) delete patch.sort; // keep the existing position
     const { error } = await supabase.from("honourees").update(patch).eq("id", id);
+    if (error) throw error;
+  },
+  async setHonoureePhoto(id, photoDataUrl) {
+    const photo_url = photoDataUrl ? await uploadDataUrl(photoDataUrl, "portrait") : null;
+    if (photoDataUrl && !photo_url) throw new Error("照片上传失败");
+    const { error } = await supabase.from("honourees").update({ photo_url }).eq("id", id);
     if (error) throw error;
   },
   async deleteHonouree(id) {

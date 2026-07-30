@@ -21,7 +21,6 @@
         <img id="segment-photo" alt="" />
         <!-- 环节短片：上台即播，播完停在最后一帧等操作台切走。playsinline 防手机全屏接管。 -->
         <video id="segment-video" playsinline preload="auto"></video>
-        <div id="segment-sound-hint" hidden>🔇 点一下大屏开启声音</div>
         <!--
           机器人举牌：assets/board/robot.png 是一张「牌面留空」的模板图，全场 19 个
           环节共用；中英标题由代码实时写在牌面上，所以临场改环节名字
@@ -36,15 +35,18 @@
             <div class="seg-board-main">
               <h2 id="segment-card-zh"></h2>
               <div id="segment-card-en"></div>
-              <!-- 逐位颁奖：标题缩小让位，中间大字换成当前上台的得奖者 -->
-              <div id="segment-award">
-                <div id="segment-award-name"></div>
-                <div id="segment-award-org"></div>
-              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <!--
+        晚宴流程环节版式（致辞 / 逐位颁奖 / 整屏名单 / 赞助商感谢状）：与 /stage 整页
+        共用 apps/stage/presenter.ts + panes.css，内容由它建，这里只留一个空容器。
+        和抽奖图层同理，必须放在 .seg-frame **外面** —— 那个框有 transform，会成为
+        子元素的包含块，整屏名单会被压进那一小块里。
+      -->
+      <div id="stage-layer"></div>
 
       <!--
         幸运抽奖（kind=lucky_draw）：和 /draw 独立页共用 apps/draw/presenter.ts，
@@ -87,11 +89,8 @@
         <i class="corner bl"></i><i class="corner br"></i>
       </div>
 
-      <aside class="brand-card tech-box">
-        <div class="tech-inner">
-          <img class="logo-cog" id="brand-logo" alt="MFEIA" />
-        </div>
-      </aside>
+      <!-- 左上角 MFEIA logo：只留标志本身，不套边框卡（与 /stage 一致）。 -->
+      <img class="brand-logo" id="brand-logo" alt="MFEIA" />
 
       <header class="hud-top">
         <div class="hud-title-wrap">
@@ -113,21 +112,17 @@
         </div>
       </aside>
 
+      <!-- 赞助商：「赞助商」小字在上、白底板 logo 在下，不套斜角卡壳（与左上 MFEIA logo 一致）。 -->
       <aside class="hud-right">
-        <div class="tech-box sponsor-card">
-          <div class="tech-inner">
-            <div class="sponsor-label">鸣谢</div>
-            <div class="sponsor-logo" id="sponsor-logo">
-              <svg viewBox="0 0 40 40" class="hex-mark" aria-hidden="true">
-                <polygon points="20,3 33,20 20,20" fill="#3fb6e6" />
-                <polygon points="20,20 33,20 20,37" fill="#7ac943" />
-                <polygon points="20,3 20,20 7,20" fill="#2e6fb0" />
-                <polygon points="7,20 20,20 20,37" fill="#f2c200" />
-              </svg>
-              <span class="hex-text">HEXAGON</span>
-            </div>
-            <div class="sponsor-sub">赞助商</div>
-          </div>
+        <div class="sponsor-sub">赞助商</div>
+        <div class="sponsor-logo" id="sponsor-logo">
+          <svg viewBox="0 0 40 40" class="hex-mark" aria-hidden="true">
+            <polygon points="20,3 33,20 20,20" fill="#3fb6e6" />
+            <polygon points="20,20 33,20 20,37" fill="#7ac943" />
+            <polygon points="20,3 20,20 7,20" fill="#2e6fb0" />
+            <polygon points="7,20 20,20 20,37" fill="#f2c200" />
+          </svg>
+          <span class="hex-text">HEXAGON</span>
         </div>
       </aside>
 

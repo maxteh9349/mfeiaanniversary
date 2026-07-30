@@ -110,3 +110,17 @@ export function neonOutlineCanvas(base: HTMLCanvasElement, s: number): HTMLCanva
 export function whiteSolidCanvas(base: HTMLCanvasElement, s: number): HTMLCanvasElement {
   return tintShape(base, s, "#eaf6ff");
 }
+
+/**
+ * Fill an <img> with the top-left brand mark shared by /screen and /stage:
+ * prefers the full logo carrying the "MFEIA" wordmark (LogoFull.png), falls
+ * back to the icon-only Logo.png the central portal uses. No-ops when the
+ * element is missing, so a page without the card can call this unconditionally.
+ */
+export function mountBrandLogo(el: HTMLImageElement | null): void {
+  if (!el) return;
+  const apply = (r: LogoBase | null) => {
+    if (r) el.src = whiteSolidCanvas(r.base, r.s).toDataURL();
+  };
+  void loadLogoBase("/LogoFull.png").then((r) => (r ? apply(r) : loadLogoBase("/Logo.png").then(apply)));
+}

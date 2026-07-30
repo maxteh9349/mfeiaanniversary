@@ -173,6 +173,12 @@ export interface Backend {
   deleteSegment(id: number): Promise<void>;
   addHonouree(segmentId: number, input: HonoureeInput): Promise<Honouree>;
   updateHonouree(id: number, input: HonoureeInput): Promise<void>;
+  /**
+   * Set (data: URL) or clear (null) an honouree's portrait. Separate from
+   * updateHonouree for the same reason setSegmentImage is separate from
+   * updateSegment: saving the name/title form must never drop the photo.
+   */
+  setHonoureePhoto(id: number, photoDataUrl: string | null): Promise<void>;
   deleteHonouree(id: number): Promise<void>;
   /** Renumber a segment's honourees to the given order (console list reordering). */
   reorderHonourees(segmentId: number, orderedIds: number[]): Promise<void>;

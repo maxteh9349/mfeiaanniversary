@@ -193,6 +193,11 @@ export interface Honouree {
   nameEn: string | null;
   /** 公司 / 学校 / 职衔. */
   org: string | null;
+  /**
+   * 人物肖像（存 `uploads` 桶，见 0011_honouree_photo.sql）。目前只有致辞版式会读它，
+   * 与姓名 / 职衔并排显示；null = 没上传，版式退回纯文字。
+   */
+  photoUrl: string | null;
   sort: number;
 }
 

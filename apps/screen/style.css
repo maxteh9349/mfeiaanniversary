@@ -8,6 +8,19 @@
   --border: rgba(56, 225, 255, 0.4);
   --c: 14px; /* chamfer size */
   --hud-w: 210px; /* 四角卡片 + 左侧签到列表共用宽度 */
+  /* 左上 logo 边长。环节版式的标题带用同一个值咬住 logo 底边，两处共用才不会走样；
+     .hud-left 的 top: 216px 也是按 36 + 这个值 = 198 留出的间隙。 */
+  --brand-logo-size: 162px;
+  /* 左右两个底角卡片（签到人数 / 时钟）的统一高度 —— 取内容较高的签到卡为准。 */
+  --hud-card-h: 166px;
+  /* 抬头行「到分隔线为止」的固定高度。两块卡片的抬头字号不同（17 / 13），只有把这一段
+     写成等高、并且都从卡片顶部起排，两条分隔线才会落在同一条水平线上。 */
+  --hud-badge-h: 32px;
+  /* 赞助商 logo 的可用高度（不含白底板 9px 内边距 —— 全局是 border-box，所以白底板的
+     height 要用 calc 把内边距加回去，见 .sponsor-logo）。两张 logo 是轮播的且宽高比
+     差很多（512×512 与 512×171），必须共用一个**固定**框，否则每换一张卡片高度就跳
+     一次。改这一个数即整体缩放。 */
+  --sponsor-logo-h: 100px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #05010e; }
@@ -66,10 +79,14 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .hud-ai { font-size: 13px; letter-spacing: 2px; color: var(--cyan); }
 .smart-badge .tech-inner { padding: 12px 22px; font-size: 17px; font-weight: 700; letter-spacing: 3px; color: #fff; }
 
-/* ---- top-left: MFEIA logo card (mirrors the sponsor card size) ---- */
-.brand-card { position: absolute; top: 36px; left: 34px; width: var(--hud-w); }
-.brand-card .tech-inner { min-height: 158px; display: flex; align-items: center; justify-content: center; padding: 13px; }
-.brand-card .logo-cog { width: 123px; height: 123px; margin: 0; }
+/* ---- top-left: MFEIA logo —— 只有标志本身，不套边框卡（与 /stage 一致）---- */
+.brand-logo {
+  /* 比左侧那一列（签到列表 / 签到人数卡，都是 left: 34px）往右让一点 —— 去掉边框卡
+     之后 logo 贴着屏幕边缘显得局促，也压着外框的左上角括号。 */
+  position: absolute; top: 36px; left: 60px;
+  width: var(--brand-logo-size); height: var(--brand-logo-size);
+  object-fit: contain; filter: drop-shadow(0 0 10px rgba(56, 225, 255, 0.55));
+}
 
 /* ---- left: recent check-ins (top clears the brand card above) ---- */
 .hud-left { position: absolute; top: 216px; left: 34px; width: var(--hud-w); }
@@ -93,22 +110,35 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .ri-company { font-size: 10px; color: rgba(138, 160, 200, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 .ri-time { font-size: 11px; color: var(--muted); align-self: center; }
 
-/* ---- right: counter + sponsor ---- */
-.hud-right { position: absolute; top: 36px; right: 34px; width: var(--hud-w); display: flex; flex-direction: column; gap: 14px; }
-.counter-card .tech-inner, .sponsor-card .tech-inner { padding: 13px; text-align: center; }
+/* ---- top-right: 赞助商（只有白底板 logo + 一行小字，不套斜角卡壳）---- */
+/* 去掉卡壳之后白底板直接占满 --hud-w，比原来（还要减去卡壳 4px + 内边距 26px）宽了
+   30px —— 宽幅 logo 因此也跟着变大，不再只有方形那张受益。 */
+.hud-right { position: absolute; top: 36px; right: 34px; width: var(--hud-w); text-align: center; }
+.counter-card .tech-inner { padding: 13px; text-align: center; }
+/* 签到卡这几行都写死 line-height —— 默认的 normal 在中文字体下约 1.4~1.5 且随字体而变，
+   卡片高度就成了不可预测的值，没法和右下时钟卡对齐（见 --hud-card-h 那段）。 */
 .counter-badge {
-  font-size: 17px; font-weight: 700; letter-spacing: 2px; color: #fff;
+  font-size: 17px; font-weight: 700; letter-spacing: 2px; color: #fff; line-height: 1.25;
   padding-bottom: 9px; margin-bottom: 9px; border-bottom: 1px solid var(--border);
 }
-.counter-label, .sponsor-label { color: #cfe8ff; font-size: 14px; letter-spacing: 2px; }
+.counter-label { color: #cfe8ff; font-size: 14px; letter-spacing: 2px; line-height: 1.3; }
 .counter-num { font-size: 54px; font-weight: 900; line-height: 1; margin: 4px 0; color: #fff; text-shadow: 0 0 18px rgba(56, 225, 255, 0.6); }
-.counter-unit { color: var(--muted); font-size: 14px; }
-.sponsor-logo { background: #fff; border-radius: 8px; margin-top: 9px; padding: 9px; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 50px; }
-.sponsor-img { max-width: 100%; max-height: 57px; object-fit: contain; transition: opacity 0.18s ease; }
+.counter-unit { color: var(--muted); font-size: 14px; line-height: 1.3; }
+/* 白底板：height 而不是 min-height —— 两张 logo 宽高比差很多（正方 / 3:1 宽幅），
+   轮播时若让内容决定高度，卡片会每几秒跳一次。固定框 + 内容居中才稳。 */
+.sponsor-logo {
+  background: #fff; border-radius: 8px; padding: 9px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  height: calc(var(--sponsor-logo-h) + 18px); /* +18 = 上下各 9px 内边距（border-box） */
+}
+/* 上限交给白底板，不写死像素 —— 改 --sponsor-logo-h 就整体缩放。 */
+.sponsor-img { max-width: 100%; max-height: 100%; object-fit: contain; transition: opacity 0.18s ease; }
 .sponsor-img.fade { opacity: 0; }
-.hex-mark { width: 31px; height: 31px; }
-.hex-text { color: #2a2a2a; font-size: 20px; font-weight: 800; letter-spacing: 1px; }
-.sponsor-sub { color: var(--muted); font-size: 14px; letter-spacing: 3px; margin-top: 9px; }
+/* 没配赞助商时的占位标记，跟着白底板一起放大，免得比真 logo 小一截。 */
+.hex-mark { width: 46px; height: 46px; }
+.hex-text { color: #2a2a2a; font-size: 26px; font-weight: 800; letter-spacing: 1px; }
+/* 「赞助商」在 logo **上方**，所以间距给 margin-bottom */
+.sponsor-sub { color: var(--muted); font-size: 14px; letter-spacing: 3px; margin-bottom: 9px; }
 
 /* ---- bottom: flow + hint + clock ---- */
 .hud-bottom {
@@ -128,12 +158,37 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .bottom-left .counter-card { width: 100%; }
 .bottom-right { position: absolute; right: 34px; bottom: 26px; width: var(--hud-w); }
 .bottom-right .clock { width: 100%; }
+/* 左下签到人数卡与右下时钟卡**顶边齐平**：宽度本来就都是 --hud-w，两块也都贴
+   bottom: 26px，所以只要高度一样，上下两条边就都在一条线上。
+   签到卡 4 行（抬头 / 标签 / 大数字 / 单位）、时钟 3 行，自然高度差 40 多像素，
+   所以给两块同一个高度、内容纵向居中，矮的那块自己补齐。
+   前提是签到卡的自然高度必须**算得准且不超过这个值** —— 所以上面那几行都写死了
+   line-height（166 = 40 抬头 + 18 标签 + 62 数字 + 18 单位 + 26 内边距，留了几像素余量）。
+   仍然用 min-height 而不是 height：万一签到人数涨到 4 位数或临场改字号，宁可两边略有
+   高差，也不能把「签到总人数」切掉半行。 */
+.bottom-left .counter-card .tech-inner,
+.bottom-right .clock .tech-inner {
+  min-height: var(--hud-card-h);
+  /* flex-start 而不是 center：两块内容多少不同，居中会让抬头行各落在不同高度，
+     分隔线就对不上。都从顶部起排 + 抬头段等高（--hud-badge-h），线才齐平。 */
+  display: flex; flex-direction: column; justify-content: flex-start;
+}
+/* 两块的抬头行：高度写死到分隔线为止，文字在其中垂直居中 —— 字号不同也不影响线的位置。 */
+.counter-badge, .clock-badge {
+  box-sizing: border-box; height: var(--hud-badge-h);
+  display: flex; align-items: center; justify-content: center;
+  padding-bottom: 0; margin-bottom: 9px;
+}
+/* 时钟内容比签到卡少一行，分隔线以下会空出一块 —— 让时间 / 日期在这块空间里居中，
+   而不是顶在线下面留一大片空白。 */
+.bottom-right .clock .clock-time { margin-top: auto; }
+.bottom-right .clock .clock-date { margin-bottom: auto; }
 .hint-box {
   align-self: center; display: flex; align-items: center; gap: 10px; max-width: 250px;
   font-size: 12px; line-height: 1.55; color: var(--gold);
 }
 .hint-smile { font-size: 28px; color: var(--gold); }
-.clock .tech-inner { padding: 12px 20px; text-align: center; }
+.clock .tech-inner { padding: 13px; text-align: center; }
 .clock-badge {
   font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--cyan);
   white-space: nowrap; padding-bottom: 8px; margin-bottom: 8px;
@@ -181,8 +236,11 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 .seg-frame > .corner.bl { bottom: 0; left: 0; }
 .seg-frame > .corner.br { bottom: 0; right: 0; }
 
+/* 配图环节 HUD 会淡出（见文件末尾那条），所以照片可以给到接近整屏 ——
+   62vh 是当年要给顶部标题栏和四角卡片让位才收着的，现在不用让了。 */
+#segment-overlay.has-photo .seg-frame { max-width: 92vw; max-height: 88vh; }
 #segment-photo {
-  display: none; max-width: 100%; max-height: calc(62vh - 28px);
+  display: none; max-width: 100%; max-height: calc(88vh - 28px);
   object-fit: contain;
   border: 1px solid var(--border);
   box-shadow: 0 0 40px rgba(42, 108, 255, 0.35), 0 0 90px rgba(3, 7, 20, 0.9);
@@ -200,13 +258,6 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
   box-shadow: 0 0 40px rgba(42, 108, 255, 0.35), 0 0 90px rgba(3, 7, 20, 0.9);
 }
 #segment-overlay.has-video #segment-video { display: block; }
-/* 浏览器不许带声自动播放时才出现；在大屏上点一下即可解锁，之后全场不再出现。 */
-#segment-sound-hint {
-  position: absolute; left: 50%; bottom: -34px; transform: translateX(-50%);
-  font-size: 15px; letter-spacing: 2px; color: var(--gold); white-space: nowrap;
-  padding: 5px 18px; border-radius: 999px;
-  background: rgba(4, 10, 28, 0.75); border: 1px solid rgba(255, 210, 102, 0.5);
-}
 
 /*
   机器人举牌（没上传专属图片的环节都走这块，绝不留空）。
@@ -225,7 +276,7 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
   --board-height: 62%;
   display: none; position: relative;
 }
-#segment-overlay:not(.has-photo):not(.has-video):not(.has-draw) #segment-card { display: block; }
+#segment-overlay:not(.has-photo):not(.has-video):not(.has-draw):not(.has-stage) #segment-card { display: block; }
 /* 由 .has-board 决定显不显示 —— 不能只靠 hidden 属性：作者样式表里的 display
    会盖过 UA 的 [hidden]{display:none}，模板图缺失时就会撑出一个空占位框。 */
 #segment-board-art { display: none; height: var(--art-h); width: auto; max-width: 74vw; }
@@ -271,30 +322,49 @@ body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; col
 }
 #segment-card-en:empty { display: none; }
 
-/* ---- 逐位颁奖：当前上台的得奖者 ---- */
-/* 环节标题退成小抬头，中间大字让给人名；英文标题这时收起来腾地方。 */
-#segment-award { display: none; }
-#segment-overlay.has-award #segment-award { display: block; }
-#segment-overlay.has-award #segment-card-en { display: none; }
-#segment-overlay.has-award #segment-card-zh {
-  font-size: calc(var(--title-size) * 0.78); letter-spacing: 3px;
+/* ---- 晚宴流程版式图层（致辞 / 逐位颁奖 / 整屏名单 / 赞助商感谢状）---- */
+/* 版式本身在 apps/stage/panes.css，由 apps/stage/presenter.ts import —— 与 /stage
+   整页共用同一份，改版式请改那里，这里只负责这块画面摆在屏幕的哪个位置、多大。
+   absolute（不是 fixed）且必须在 .seg-frame 外面，理由同下面的抽奖图层。 */
+#stage-layer {
+  /* 环节上台时 HUD 会淡出（见下），所以这块和 /stage 整页一样用满整屏，
+     --pane-scale 取 1（不再需要为四角卡片收一档）。 */
+  --pane-scale: 1;
+  display: none; position: absolute;
+  top: 36px; left: 34px; right: 34px; bottom: 7vh;
+  flex-direction: column; align-items: center;
 }
-#segment-overlay.has-award #segment-card-zh::after { margin-top: 0.5em; width: 34%; }
+#segment-overlay.has-stage #stage-layer { display: flex; }
+/* 举牌卡与它的四角括号让位给版式 */
+#segment-overlay.has-stage .seg-frame { display: none; }
+/* 标题带与 logo 等高、同一条顶线（top 都是 36px）→ 面板从 logo 底边下方开始，
+   名字不会跑到 logo 底下。与 /stage 靠 --logo-size 对齐是同一招。 */
+#stage-layer .title-band { min-height: var(--brand-logo-size); }
+/* 标题带是居中的，但两个上角都占着位置（左：MFEIA logo，右：赞助商 —— 环节期间
+   两者都不淡出）。超长环节名（「颁发 2025/26 假期工业之旅结业证书」那种）横过来
+   就会压上去。两边对称让出「较宽那一侧 + 余量」= 34 + --hud-w(210) + 20；标题顶到
+   这个边界就换行，绝不越界。按 210 而不是 logo 的 162 算 —— 赞助商块是较宽的那侧。
+   只收标题带，不收 #stage-layer 本身 —— 整屏名单还要用满宽度。 */
+#stage-layer .stage-header {
+  max-width: calc(100vw - 2 * (34px + var(--hud-w) + 20px));
+}
 
-#segment-award-name {
-  margin-top: 0.55em; font-size: calc(var(--title-size) * 1.32); font-weight: 900;
-  letter-spacing: 4px; line-height: 1.2; color: #fff; white-space: nowrap;
-  text-shadow: 0 0 22px rgba(255, 210, 102, 0.55), 0 0 46px rgba(56, 225, 255, 0.45);
-}
-#segment-award-org {
-  margin-top: 0.5em; font-size: calc(var(--title-size) * 0.38); color: #9fd6ff;
-}
-#segment-award-org:empty { display: none; }
-/* 换人才重播这个弹出，同环节的无关刷新不该让名字再跳一次 */
-#segment-award.enter { animation: seg-award-in 0.45s cubic-bezier(0.18, 1.3, 0.4, 1); }
-@keyframes seg-award-in {
-  0% { opacity: 0; transform: translateY(14px) scale(0.94); }
-  100% { opacity: 1; transform: none; }
+/* 环节上台 = 让出整块屏幕：HUD 淡出，只留左上 logo 与外框（/stage 整页也是这个
+   样子，两块屏观感一致，品牌也全场在线）。
+   流程版式 / 配图 / 短片三种都淡出 —— 它们各自要占大半个屏，留着 HUD 就会互相压字。
+   **抽奖（has-draw）故意不在名单里**：抽奖图层本来就是靠 HUD 已有的标题栏与标语撑场，
+   搬进来会重复，见上面 #draw-layer 那段注释。
+   #hud 与 #segment-overlay 同级，一条兄弟选择器就够，不需要 JS。
+   不整块给 #hud 设 opacity —— 父级透明度没法被子级还原，logo 就留不住了。
+   用 opacity 而不是 display：.hud-left / .hud-bottom 上带着运维台开关写的行内
+   style.display，碰 display 会打架；opacity 与它正交，关掉的照样保持关闭。 */
+.hud-title-wrap, .hud-left, .hud-bottom,
+.bottom-left, .bottom-right, .motto { transition: opacity 0.45s ease; }
+/* .hud-right（赞助商 logo）**不在**淡出名单里 —— 赞助商要全场在屏，和左上 MFEIA logo
+   一样，环节期间照常显示。 */
+#segment-overlay:is(.has-stage, .has-photo, .has-video) ~ #hud
+  :is(.hud-title-wrap, .hud-left, .hud-bottom, .bottom-left, .bottom-right, .motto) {
+  opacity: 0;
 }
 
 /* ---- 幸运抽奖图层（kind=lucky_draw）---- */

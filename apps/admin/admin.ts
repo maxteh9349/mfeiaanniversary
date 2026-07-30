@@ -655,6 +655,15 @@ void (async () => {
   });
 
   // ---- segment + honouree editor ----
+  /**
+   * 短片路径必须是 /video/xxx.mp4 这种站内路径或 http(s) 直链。
+   * 现场踩过一次：有人把人名「YB谢守钦」填进这一栏，大屏只判断非空就切进短片模式，
+   * 结果整块屏压成全黑 + 一个加载失败的黑框，致辞版式完全不渲染。宁可存不下也不能上台才发现。
+   */
+  function badVideoUrl(url: string | null): boolean {
+    return !!url && !/^(\/|https?:\/\/)/.test(url);
+  }
+
   function readSegmentForm() {
     return {
       kind: $<HTMLSelectElement>("e-kind").value as SegmentKind,
@@ -758,9 +767,17 @@ void (async () => {
       group.className = "h-group";
       group.textContent = h.groupLabel ?? "";
       li.append(idx, name, meta, group);
+      // 照片只有致辞版式会显示，所以标记也只在致辞环节出现，免得别的环节看着像漏传了。
+      if (segById(editingSegmentId)?.kind === "speech") {
+        const shot = document.createElement("span");
+        shot.className = h.photoUrl ? "h-photo on" : "h-photo";
+        shot.textContent = h.photoUrl ? "已配照片" : "无照片";
+        li.appendChild(shot);
+      }
       for (const [cls, text] of [
         ["h-up trigger", "↑"],
         ["h-down trigger", "↓"],
+        ["h-photo-set trigger", "照片"],
         ["h-edit trigger", "改"],
         ["h-del trigger", "删"],
       ] as const) {
@@ -794,6 +811,11 @@ void (async () => {
   $("e-save").addEventListener("click", async () => {
     const input = readSegmentForm();
     if (!input.titleZh) return void (eMsg.textContent = "请填写中文标题");
+    if (badVideoUrl(input.videoUrl)) {
+      return void (eMsg.textContent =
+        `短片路径「${input.videoUrl}」不是有效地址 —— 要填 /video/xxx.mp4 或 http(s) 直链。` +
+        `不放短片请留空（填错会让这个环节上台时整块屏变黑）。`);
+    }
     try {
       if (editingSegmentId == null) {
         const created = await backend.createSegment(input);
@@ -861,6 +883,32 @@ void (async () => {
     eMsg.textContent = "";
   });
 
+  /** 哪一位在等着收照片 —— 文件选择器是全表共用的一个，点「照片」时记下目标。 */
+  let photoTargetId: number | null = null;
+
+  /** 存下照片后重读名单，让「已配照片」标记与数据库一致。大屏经 realtime 自己更新。 */
+  async function setHonoureePhoto(id: number, dataUrl: string | null): Promise<void> {
+    if (editingSegmentId == null) return;
+    eMsg.textContent = dataUrl ? "上传中…" : "移除中…";
+    try {
+      await backend.setHonoureePhoto(id, dataUrl);
+      honoureeCache.delete(editingSegmentId);
+      editing = await honoureesOf(editingSegmentId);
+      renderHonourees();
+      eMsg.textContent = dataUrl ? "已上传照片" : "已移除照片";
+    } catch (err) {
+      eMsg.textContent = `${dataUrl ? "上传" : "移除"}失败：${(err as Error).message}`;
+    }
+  }
+
+  $("h-photo-file").addEventListener("change", async (e) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file && photoTargetId != null) await setHonoureePhoto(photoTargetId, await fileToDataUrl(file));
+    input.value = "";
+    photoTargetId = null;
+  });
+
   hList.addEventListener("click", async (e) => {
     const li = (e.target as HTMLElement).closest("li") as HTMLElement | null;
     if (!li || editingSegmentId == null) return;
@@ -884,6 +932,17 @@ void (async () => {
         if (!confirm(`确定删除「${editing[i].nameZh}」吗？`)) return;
         await backend.deleteHonouree(id);
         if (editingHonoureeId === id) resetHonoureeForm();
+      } else if (cls.contains("h-photo-set")) {
+        // 已有照片就先问要不要移除，否则弹文件选择器 —— 与环节大图同一套交互。
+        if (editing[i].photoUrl) {
+          if (confirm(`「${editing[i].nameZh}」已配照片。\n确定要移除吗？\n（要换一张请先移除再上传）`)) {
+            await setHonoureePhoto(id, null);
+          }
+          return;
+        }
+        photoTargetId = id;
+        $<HTMLInputElement>("h-photo-file").click();
+        return;
       } else if (cls.contains("h-up") || cls.contains("h-down")) {
         const j = cls.contains("h-up") ? i - 1 : i + 1;
         if (j < 0 || j >= editing.length) return;

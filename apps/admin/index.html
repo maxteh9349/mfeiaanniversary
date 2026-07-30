@@ -168,6 +168,11 @@
         <button id="h-cancel" class="ghost" hidden>取消编辑</button>
       </div>
       <ul id="h-list" class="list"></ul>
+      <!--
+        名单里每行的「照片」按钮共用这一个文件选择器（点哪一行就存哪一位）。
+        目前只有致辞版式会把照片显示在大屏上 —— 照片与姓名 / 职衔并排。
+      -->
+      <input type="file" id="h-photo-file" accept="image/*" hidden />
       <div id="e-msg" class="msg"></div>
     </section>
 

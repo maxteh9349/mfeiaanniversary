@@ -6,6 +6,7 @@ import { Portal } from "./portal/portal.ts";
 import { Director } from "./behavior/director.ts";
 import { PosterReveal } from "./avatar/posterReveal.ts";
 import { mountDrawPresenter } from "../draw/presenter.ts";
+import { mountStagePresenter, STAGE_KINDS } from "../stage/presenter.ts";
 import type { Guest, Honouree, Segment, StageState } from "../../shared/events.ts";
 import { STAGE_VOLUME_DEFAULT } from "../../shared/events.ts";
 
@@ -51,9 +52,10 @@ segmentBoardArt.addEventListener("load", () => {
 
 // ---- 环节短片 ----
 // 浏览器不允许带声自动播放，除非页面被真人点过。开场前在大屏上随便点一下就解锁全场；
-// 没点也不会卡住 —— 先静音播出去，角落提示点一下开声音。
+// 没点也不会卡住 —— 先静音播出去。
+// 注意：屏幕上**没有**任何「点一下开声音」的提示（刻意去掉的，不上大屏）。所以忘了点
+// 就是一路静音、且现场看不出原因 —— 开场前必须在大屏上点一下当作固定流程。
 const segmentVideo = document.getElementById("segment-video") as HTMLVideoElement;
-const soundHint = document.getElementById("segment-sound-hint") as HTMLElement;
 let soundUnlocked = false;
 /** 运维台滑杆设定的音量 0–100，跟 stage 状态一起推过来。 */
 let segmentVolume = STAGE_VOLUME_DEFAULT;
@@ -67,14 +69,10 @@ document.addEventListener(
   { once: true },
 );
 
-/**
- * 音量 = 运维台设定值，但页面没被点过时只能静音播（浏览器策略）。
- * 提示条只在「本该有声却被浏览器拦下」时才出现 —— 操作台自己拉到 0 不算。
- */
+/** 音量 = 运维台设定值，但页面没被点过时只能静音播（浏览器策略）。 */
 function applySegmentVolume(): void {
   segmentVideo.volume = segmentVolume / 100;
   segmentVideo.muted = segmentVolume === 0 || !soundUnlocked;
-  soundHint.hidden = soundUnlocked || segmentVolume === 0 || !!segmentVideo.paused;
 }
 
 function playSegmentVideo(url: string): void {
@@ -82,10 +80,9 @@ function playSegmentVideo(url: string): void {
   if (segmentVideo.getAttribute("src") !== url) segmentVideo.src = url;
   else segmentVideo.currentTime = 0;
   applySegmentVolume();
-  soundHint.hidden = soundUnlocked || segmentVolume === 0;
   segmentVideo.play().catch(() => {
+    // 带声被拦下就退回静音重播一次，宁可没声音也不能不播。
     segmentVideo.muted = true;
-    soundHint.hidden = segmentVolume === 0;
     void segmentVideo.play().catch(() => {
       /* 路径写错 / 编码不支持：大屏留黑框，操作台切走即可 */
     });
@@ -95,11 +92,9 @@ function playSegmentVideo(url: string): void {
 function stopSegmentVideo(): void {
   if (!segmentVideo.getAttribute("src")) return;
   segmentVideo.pause();
-  soundHint.hidden = true;
 }
 
-// 播完停在最后一帧等操作台切走，只把声音提示收掉。
-segmentVideo.addEventListener("ended", () => (soundHint.hidden = true));
+// 播完不做任何事：停在最后一帧等操作台切走。
 
 function setSegmentText(id: string, text: string | null): void {
   const el = document.getElementById(id);
@@ -114,38 +109,10 @@ const drawPresenter = mountDrawPresenter(document.getElementById("draw-layer") a
   isActive: () => segmentOverlay.classList.contains("has-draw"),
 });
 
-/**
- * 逐位颁奖：把当前上台的得奖者写进标题卡。操作台按「下一位」只改 stage.index，
- * 名单本来就随每次指令一起推过来，这里直接取用。
- * 返回 false 表示这个环节没法逐位显示（不是 award / 名单是空的），退回普通标题卡。
- */
-function renderAward(state: StageState, segment: Segment, honourees: Honouree[]): boolean {
-  if (segment.kind !== "award" || honourees.length === 0) return false;
-
-  const done = state.index >= honourees.length;
-  const cur = honourees[state.index];
-  if (done) {
-    // 翻过最后一位：流程表每场颁奖都以合照收尾。
-    setSegmentText("segment-award-name", "合 照");
-    setSegmentText("segment-award-org", "全体合影");
-  } else {
-    // 位次（第 N / M 位）只在运维台显示 —— 大屏上给宾客看名字就够了。
-    setSegmentText("segment-award-name", cur.nameZh);
-    setSegmentText("segment-award-org", [cur.nameEn, cur.org].filter(Boolean).join(" · "));
-  }
-
-  // 只有真的换人才重播弹出动画；无关的设置写入不该让名字再跳一次。
-  const key = `${segment.id}:${state.index}`;
-  if (key !== lastAwardKey) {
-    const el = document.getElementById("segment-award") as HTMLElement;
-    el.classList.remove("enter");
-    void el.offsetWidth; // 重启 CSS 动画
-    el.classList.add("enter");
-    lastAwardKey = key;
-  }
-  return true;
-}
-let lastAwardKey = "";
+// 致辞 / 逐位颁奖 / 整屏名单 / 赞助商感谢状：与 /stage 整页共用同一个 presenter 和
+// 同一份 panes.css，所以两块屏的版式不会走样。上台即在这块大屏原地弹出，不换页、
+// 不重载 3D。名单本来就随每次指令一起推过来（subscribeStage 总是带 honourees）。
+const stagePresenter = mountStagePresenter(document.getElementById("stage-layer") as HTMLElement);
 
 /** 正在放的那条片子（环节 id + 路径），免得同环节的其它指令把片子从头重播。 */
 let playingVideoKey = "";
@@ -159,8 +126,8 @@ function showSegment(state: StageState, segment: Segment | null, honourees: Hono
 
   segmentLive = state.active && !!segment;
   if (!segmentLive || !segment) {
-    segmentOverlay.classList.remove("show", "has-draw", "has-award");
-    lastAwardKey = "";
+    segmentOverlay.classList.remove("show", "has-draw", "has-stage");
+    stagePresenter.reset();
     playingVideoKey = "";
     stopSegmentVideo();
     if (drawWasLive) drawPresenter.reset();
@@ -174,7 +141,11 @@ function showSegment(state: StageState, segment: Segment | null, honourees: Hono
   if (drawLive !== drawWasLive) drawPresenter.reset();
   drawWasLive = drawLive;
 
-  const video = segment.videoUrl ?? "";
+  // 只认站内路径或 http(s) 直链才当短片。以前只判断非空，结果有人把人名填进这一栏，
+  // 大屏就切进短片模式：底色压黑 + 一个加载失败的黑框，致辞版式完全不渲染。
+  // 运维台已经拦了新保存的，这里再兜一层 —— 旧数据和直接改库都绕不过大屏。
+  const rawVideo = segment.videoUrl?.trim() ?? "";
+  const video = /^(\/|https?:\/\/)/.test(rawVideo) ? rawVideo : "";
   segmentOverlay.classList.toggle("has-video", !!video);
   if (video) {
     // 「下一位」这类同环节指令不该打断播放；换了环节或改了路径才重放。
@@ -199,7 +170,13 @@ function showSegment(state: StageState, segment: Segment | null, honourees: Hono
   }
   setSegmentText("segment-card-zh", segment.titleZh);
   setSegmentText("segment-card-en", segment.titleEn);
-  segmentOverlay.classList.toggle("has-award", renderAward(state, segment, honourees));
+
+  // 优先级：操作台明确上传的图片 / 短片 > 抽奖 > 流程版式 > 举牌标题卡。
+  // 过场标题（kind=title）不走版式 —— 举牌卡本来就是为它做的。
+  const hasStage = !url && !video && !drawLive && STAGE_KINDS.has(segment.kind);
+  segmentOverlay.classList.toggle("has-stage", hasStage);
+  if (hasStage) stagePresenter.render(state, segment, honourees);
+
   segmentOverlay.classList.add("show");
 }
 

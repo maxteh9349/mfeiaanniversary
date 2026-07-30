@@ -165,6 +165,10 @@ label { display: flex; align-items: center; gap: 6px; }
 .list li.h-live { background: rgba(255, 210, 102, 0.12); }
 .list .h-idx { color: #8aa0c8; font-size: 13px; min-width: 2.2em; }
 .list .h-group { color: #ffd266; font-size: 12px; }
+/* 只在致辞环节出现：这位讲者有没有配肖像 */
+.list .h-photo { font-size: 12px; color: #6f9fd0; white-space: nowrap; }
+.list .h-photo.on { color: #7ac943; }
+.list .h-photo-set { background: transparent; color: #9fd6ff; border: 1px solid rgba(56, 225, 255, 0.4); }
 
 /* Lucky draw operator panel */
 .draw-box { border-color: rgba(255, 210, 102, 0.35); }

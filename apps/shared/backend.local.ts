@@ -197,6 +197,7 @@ const backend: Backend = {
   deleteSegment: stageUnavailable,
   addHonouree: stageUnavailable,
   updateHonouree: stageUnavailable,
+  setHonoureePhoto: stageUnavailable,
   deleteHonouree: stageUnavailable,
   reorderHonourees: stageUnavailable,
   getStageState: stageUnavailable,

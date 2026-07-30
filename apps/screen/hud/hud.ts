@@ -1,7 +1,7 @@
 import { displayName, type Guest, type SponsorLogo } from "../../../shared/events.ts";
 import { DEFAULTS } from "../../../shared/config.ts";
 import { getBackend } from "../../shared/backend.ts";
-import { loadLogoBase, whiteSolidCanvas } from "../logo.ts";
+import { mountBrandLogo } from "../logo.ts";
 
 /** "07:32 PM" 12-hour format matching the design. */
 function fmtTime(d: Date): string {
@@ -30,7 +30,7 @@ export class Hud {
   constructor() {
     this.startClock();
     void this.loadQr();
-    this.loadBrandLogo();
+    mountBrandLogo(document.getElementById("brand-logo") as HTMLImageElement | null);
     this.sponsorFallback = this.sponsorEl?.innerHTML ?? "";
   }
 
@@ -64,20 +64,6 @@ export class Hud {
         img.classList.remove("fade");
       }, 180);
     }, sec * 1000);
-  }
-
-  /**
-   * Top-left brand logo (white background keyed out). Prefers the full logo
-   * with the "MFEIA" wordmark (LogoFull.png); falls back to the icon-only
-   * Logo.png used by the central portal.
-   */
-  private loadBrandLogo(): void {
-    const el = document.getElementById("brand-logo") as HTMLImageElement | null;
-    if (!el) return;
-    const apply = (r: Awaited<ReturnType<typeof loadLogoBase>>) => {
-      if (r) el.src = whiteSolidCanvas(r.base, r.s).toDataURL();
-    };
-    void loadLogoBase("/LogoFull.png").then((r) => (r ? apply(r) : loadLogoBase("/Logo.png").then(apply)));
   }
 
   setTotal(total: number): void {
