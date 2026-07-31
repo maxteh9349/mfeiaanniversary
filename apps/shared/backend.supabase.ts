@@ -19,6 +19,7 @@ import type {
 } from "../../shared/events.ts";
 import {
   DRAW_CHANNEL,
+  prizeLevelRank,
   STAGE_AUTO_SEC_DEFAULT,
   STAGE_KEYS,
   STAGE_VOLUME_DEFAULT,
@@ -530,7 +531,11 @@ const backend: Backend = {
   // ---- lucky draw ----
   async listPrizes() {
     const { data } = await supabase.from("prizes").select("*").order("sort").order("id");
-    return ((data ?? []) as PrizeRow[]).map(rowToPrize);
+    // 按抽奖顺序（幸运 → 三 → 二 → 特等）排，同档之间保持库里的 sort / id 次序 ——
+    // 运维台的奖品下拉与列表都吃这个顺序，操作者从上往下点就是正确的流程。
+    return ((data ?? []) as PrizeRow[])
+      .map(rowToPrize)
+      .sort((a, b) => prizeLevelRank(a.level) - prizeLevelRank(b.level));
   },
   async createPrize(input: PrizeInput) {
     const image_url = input.imageDataUrl ? await uploadDataUrl(input.imageDataUrl, "prize") : null;

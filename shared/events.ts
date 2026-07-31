@@ -90,6 +90,20 @@ export const WS_PATH = "/ws";
 // ---- lucky draw -----------------------------------------------------------
 
 export type PrizeLevel = "lucky" | "third" | "second" | "grand";
+
+/**
+ * 抽奖顺序：**从最低的奖抽起，越抽越大**（现场惯例，压轴留给特等奖）。
+ * 奖品列表与运维台的奖品下拉都按这个次序排，同档之间再按 sort / id ——
+ * 操作者从上往下点就是正确的流程，不用记也不会点错。
+ */
+export const PRIZE_DRAW_ORDER: readonly PrizeLevel[] = ["lucky", "third", "second", "grand"];
+
+/** 排序用的档次序号；不认识的档次排到最后。 */
+export function prizeLevelRank(level: PrizeLevel): number {
+  const i = PRIZE_DRAW_ORDER.indexOf(level);
+  return i < 0 ? PRIZE_DRAW_ORDER.length : i;
+}
+
 export type WinnerStatus = "pending" | "claimed" | "forfeit";
 
 export interface Prize {

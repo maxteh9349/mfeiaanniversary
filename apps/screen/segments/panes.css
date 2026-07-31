@@ -73,6 +73,22 @@
 /* 有照片时照片与姓名那一栏**横向对中**：两块各自在面板里垂直居中，于是中线重合 ——
    原来是两块一起顶到面板上沿（align-items: flex-start），照片比文字高得多，
    看着就是文字堆在照片上半段。致辞版式不动（那边照片单独上提过，见 --speech-photo-rise）。 */
+/* 合照（横构图）：必须看清每一个人 —— 不裁切、不套蒙版、给到接近整屏，并且**不显示姓名**
+   （合照没有「名字」，屏上压一行大字只会挡住人）。这一套只在图是横的时候生效，
+   由 presenter 的 mountPanePhoto 按图片自身宽高加 .wide-photo，运维台不用填任何字段。
+   24 位理事那种 3:4 竖构图肖像完全不受影响。 */
+.pane-award.has-photo.wide-photo .award-main { display: none; }
+.pane-award.has-photo.wide-photo .pane-photo {
+  width: auto; height: auto;
+  max-width: 88vw; max-height: calc(78vh * var(--pane-scale, 1));
+  aspect-ratio: auto; object-fit: contain;
+  margin-top: 0;
+  /* 蒙版会把底边 44% 化掉 —— 合照的最后一排和下面那行字就没了。 */
+  -webkit-mask-image: none; mask-image: none;
+}
+/* 合照独占整屏，不用再为「照片 + 文字」那条中线上提。 */
+.pane-award.has-photo.wide-photo { --award-block-rise: 0vh; }
+
 .pane-award.has-photo {
   align-items: center;
   /* 照片 + 文字**整块**往上提。用 transform 只挪画面、不动布局，所以照片与姓名的

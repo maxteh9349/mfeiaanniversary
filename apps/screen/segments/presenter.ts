@@ -64,6 +64,9 @@ function mountPanePhoto(pane: HTMLElement, variantClass: string): PanePhoto {
   el.addEventListener("load", () => {
     failed = "";
     pane.classList.add("has-photo");
+    // 横构图 = 合照那种「必须看清每个人」的图，走另一套版式（不裁切、不套蒙版、放到最大、
+    // 不显示姓名）。竖构图肖像照旧。靠图片自身的宽高判断，运维台不用多填任何字段。
+    pane.classList.toggle("wide-photo", el.naturalWidth > el.naturalHeight);
   });
   return {
     el,
@@ -75,6 +78,7 @@ function mountPanePhoto(pane: HTMLElement, variantClass: string): PanePhoto {
         if (el.getAttribute("src") !== src) el.src = src;
       } else {
         el.removeAttribute("src");
+        pane.classList.remove("wide-photo");
       }
     },
   };
